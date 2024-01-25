@@ -103,6 +103,8 @@ class Store(Generic[ConnectorT]):
         self._cache_size = cache_size
         self._serializer = serializer
         self._deserializer = deserializer
+        
+
 
         logger.info(f'Initialized {self}')
 
@@ -529,6 +531,7 @@ class Store(Generic[ConnectorT]):
                 deserializer=deserializer,
                 evict=evict,
             )
+            
             proxy = Proxy(factory)
 
         if self.metrics is not None:
