@@ -3,6 +3,8 @@ import uuid
 from proxystore.utils.data import chunk_bytes
 from proxystore.cdn.constants import MAX_CHUNK_LENGTH
 
+import time
+
 def evict(
     address: str,
     key: str,
@@ -98,6 +100,8 @@ def put(
 ) -> None:
     post = requests.post if session is None else session.post
     
+    start = time.perf_counter_ns()
+    
     response = post(
         f'http://{address}/api/files/push',
         params={"name": name, "size": len(data), "hash": data_hash, "key": key,
@@ -106,6 +110,9 @@ def put(
                 "required_chunks": required_chunks, "disperse": disperse}
     )
 
+    end = time.perf_counter_ns()
+    print(f"Time to get route: {(end - start) / 1e6} ms")
+    
     if response.status_code == 201:
         storage_node = response.json()["nodes"][0]["route"]
         response = post(
@@ -115,6 +122,14 @@ def put(
             data=chunk_bytes(data, MAX_CHUNK_LENGTH),
             stream=True,
         )
+        #print(response.text)
+        
+        if not response.ok:
+            raise requests.exceptions.RequestException(
+                f'Storage node {storage_node} returned HTTP error code {response.status_code}. '
+                f'{response.text}',
+                response=response,
+            )
     else:
         raise requests.exceptions.RequestException(
             f'Metadata server returned HTTP error code {response.status_code}. '

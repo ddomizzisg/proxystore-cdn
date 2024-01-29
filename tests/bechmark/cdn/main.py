@@ -214,7 +214,6 @@ async def runner_endpoint(
         relay_server=server,
         max_object_size=10000000000,
     ) as endpoint:
-        print(endpoint._max_object_size)
         for op in ops:
             for i, payload_size in enumerate(payload_sizes):
                 # Only need to repeat for payload_size for GET/SET
@@ -262,7 +261,6 @@ def runner_cdn(
 
     conn = CDNConnector(catalog=catalog, user_token=usertoken, gateway=cdn_address)
     store = Store('my-store', conn)
-    print(payload_sizes)
     for op in ops:
         for i, payload_size in enumerate(payload_sizes):
             # Only need to repeat for payload_size for GET/SET

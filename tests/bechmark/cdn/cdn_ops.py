@@ -21,6 +21,7 @@ def test_set(
         times_ms.append((end - start) / 1e6)
 
         # Evict key immediately to keep memory usage low
+        del data
         store.evict(key)
 
     return times_ms
@@ -40,6 +41,7 @@ def test_get(
         data_ = store.get(key)
         end = time.perf_counter_ns()
         times_ms.append((end - start) / 1e6)
+        del data_
 
     # Evict key immediately to keep memory usage low
     store.evict(key)
