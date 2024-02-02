@@ -56,7 +56,7 @@ def get(
         params={"key": key,
                 "tokenuser": token_user}
     )
-
+    #printi(response.text)
     if response.status_code == 200:
         route = response.json()["data"]["routes"][0]["route"]
         get_ = requests.get if session is None else session.get
@@ -64,7 +64,7 @@ def get(
             f'http://{route}',
             stream=True,
         )
-
+        #print(response.text)
         # Status code 404 is only returned if there's no data associated with the
         # provided key.
         if response.status_code == 404:
@@ -100,7 +100,7 @@ def put(
 ) -> None:
     post = requests.post if session is None else session.post
     
-    start = time.perf_counter_ns()
+    #start = time.perf_counter_ns()
     
     response = post(
         f'http://{address}/api/files/push',
@@ -110,8 +110,8 @@ def put(
                 "required_chunks": required_chunks, "disperse": disperse}
     )
 
-    end = time.perf_counter_ns()
-    print(f"Time to get route: {(end - start) / 1e6} ms")
+    #end = time.perf_counter_ns()
+    #print(f"Time to get route: {(end - start) / 1e6} ms")
     
     if response.status_code == 201:
         storage_node = response.json()["nodes"][0]["route"]
