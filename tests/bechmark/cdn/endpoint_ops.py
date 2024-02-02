@@ -129,6 +129,6 @@ async def test_set(
         times_ms.append((end - start) / 1e6)
 
         # Evict key immediately to keep memory usage low
-        await endpoint.evict(key)
+        #await endpoint.evict(key)
 
     return times_ms

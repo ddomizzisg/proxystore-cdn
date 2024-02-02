@@ -64,6 +64,8 @@ def get(
             f'http://{route}',
             stream=True,
         )
+        
+        #print(response.text)
 
         # Status code 404 is only returned if there's no data associated with the
         # provided key.
@@ -111,7 +113,7 @@ def put(
     )
 
     end = time.perf_counter_ns()
-    print(f"Time to get route: {(end - start) / 1e6} ms")
+    #print(f"Time to get route: {(end - start) / 1e6} ms")
     
     if response.status_code == 201:
         storage_node = response.json()["nodes"][0]["route"]
