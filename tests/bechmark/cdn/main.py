@@ -16,6 +16,8 @@ from typing import Any
 from typing import Literal
 from typing import NamedTuple
 from typing import Sequence
+import concurrent.futures
+
 
 from proxystore.endpoint.endpoint import Endpoint
 
@@ -45,6 +47,7 @@ class RunStats(NamedTuple):
     total_time_ms: float
     avg_time_ms: float
     min_time_ms: float
+    clients: int | None
     max_time_ms: float
     stdev_time_ms: float
     avg_bandwidth_mbps: float | None
@@ -127,12 +130,14 @@ async def run_endpoint(
         avg_bandwidth_mbps=avg_bandwidth_mbps,
     )
 
+    
 
 def run_cdn(
     store : Store,
     op: OP_TYPE,
     payload_size: int = 0,
     repeat: int = 3,
+    clients: int = 1,
 ) -> RunStats:
     """Run test for single operation and measure performance.
 
@@ -174,6 +179,7 @@ def run_cdn(
         backend='CDN',
         op=op,
         payload_size_bytes=payload_size if op in ('GET', 'SET') else None,
+        clients=clients,
         repeat=repeat,
         total_time_ms=sum(times_ms),
         avg_time_ms=sum(times_ms) / len(times_ms),
@@ -233,6 +239,58 @@ async def runner_endpoint(
     if csv_file is not None:
         csv_logger.close()
         logger.log(TESTING_LOG_LEVEL, f'results logged to {csv_file}')
+
+def runner_cdn_concurrent(
+    cdn_address: str,
+    usertoken: str,
+    catalog: str,
+    ops: list[OP_TYPE],
+    *,
+    payload_sizes: list[int],
+    clients: int,
+    repeat: int,
+    csv_file: str | None = None,
+) -> None:
+    """Run matrix of test test configurations with a CDN server.
+
+    Args:
+        cdn_address (str): remote CDN server hostname/IP.
+        usertoken (str): user credentials.
+        catalog (str): catalog to store the data.
+        ops (str): endpoint operations to test.
+        payload_sizes (int): bytes to send/receive for GET/SET operations.
+        repeat (int): number of times to repeat operations.
+        csv_file (str): optional csv filepath to log results to.
+    """
+    
+    if csv_file is not None:
+        csv_logger = CSVLogger(csv_file, RunStats)
+        
+    for op in ops:
+        for i, payload_size in enumerate(payload_sizes):
+            for c in clients:
+                if i == 0 or op in ['GET', 'SET']:
+                    conn = CDNConnector(catalog=catalog, user_token=usertoken, gateway=cdn_address)
+                    store = Store('my-store', conn)
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
+                        futures = [executor.submit(run_cdn, store, op=op, payload_size=payload_size, repeat=repeat, clients=c) for _ in range(c)]
+                        # Wait for all futures to complete
+                        concurrent.futures.wait(futures)
+
+                        run_stats = futures[0] if c == 1 else max(futures, key=lambda x: x.result().max_time_ms)
+                        #max_object = max(futures, key=lambda x: x.result().max_time_ms)
+                        
+                        logger.log(TESTING_LOG_LEVEL, run_stats.result())
+                        if csv_file is not None:
+                            csv_logger.log(run_stats.result())
+
+    if csv_file is not None:
+        csv_logger.close()
+        logger.log(TESTING_LOG_LEVEL, f'results logged to {csv_file}')
+                        
+                        
+                
+                
 
 
 def runner_cdn(
@@ -329,6 +387,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='Payload sizes for GET/SET operations',
     )
     parser.add_argument(
+        '--clients',
+        type=int,
+        nargs='+',
+        default=[1],
+        help='Number of concurrent clients to run the tests',
+    )
+    parser.add_argument(
         '--server',
         required='ENDPOINT' in sys.argv,
         help='Relay server address for connecting to the remote endpoint',
@@ -373,15 +438,37 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
         )
     elif args.backend == 'CDN':
-        runner_cdn(
-            args.cdn,
-            args.cdn_usertoken,
-            args.cdn_catalog,
-            args.ops,
-            payload_sizes=args.payload_sizes,
-            repeat=args.repeat,
-            csv_file=args.csv_file,
-        )
+        runner_cdn_concurrent(
+                args.cdn,
+                args.cdn_usertoken,
+                args.cdn_catalog,
+                args.ops,
+                payload_sizes=args.payload_sizes,
+                clients=args.clients,
+                repeat=args.repeat,
+                csv_file=args.csv_file,
+            )
+        # if args.clients > 1:
+        #     runner_cdn_concurrent(
+        #         args.cdn,
+        #         args.cdn_usertoken,
+        #         args.cdn_catalog,
+        #         args.ops,
+        #         payload_sizes=args.payload_sizes,
+        #         clients=args.clients,
+        #         repeat=args.repeat,
+        #         csv_file=args.csv_file,
+        #     )
+        # else:
+        #     runner_cdn(
+        #         args.cdn,
+        #         args.cdn_usertoken,
+        #         args.cdn_catalog,
+        #         args.ops,
+        #         payload_sizes=args.payload_sizes,
+        #         repeat=args.repeat,
+        #         csv_file=args.csv_file,
+        #     )
     else:
         raise AssertionError('Unreachable.')
 
