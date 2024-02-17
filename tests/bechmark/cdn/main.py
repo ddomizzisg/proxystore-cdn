@@ -22,6 +22,7 @@ import concurrent.futures
 from proxystore.endpoint.endpoint import Endpoint
 
 import endpoint_ops as endpoint_ops
+import cdn_ida as ops_ida
 import cdn_ops as cdn_ops
 from psargparse import add_logging_options
 from pscsv import CSVLogger
@@ -48,6 +49,9 @@ class RunStats(NamedTuple):
     avg_time_ms: float
     min_time_ms: float
     clients: int | None
+    workers: int | None
+    n: int | None
+    k: int | None
     max_time_ms: float
     stdev_time_ms: float
     avg_bandwidth_mbps: float | None
@@ -133,11 +137,14 @@ async def run_endpoint(
     
 
 def run_cdn(
-    store : Store,
+    conn : CDNConnector,
     op: OP_TYPE,
     payload_size: int = 0,
     repeat: int = 3,
     clients: int = 1,
+    nodes: int = 1,
+    k: int = 1,
+    workers: int = 1
 ) -> RunStats:
     """Run test for single operation and measure performance.
 
@@ -156,13 +163,13 @@ def run_cdn(
     logger.log(TESTING_LOG_LEVEL, f'starting remote cdn test for {op}')
 
     if op == 'EVICT':
-        times_ms = cdn_ops.test_evict(store, repeat)
+        times_ms = ops_ida.test_evict(conn, repeat)
     elif op == 'EXISTS':
-        times_ms = cdn_ops.test_exists(store, repeat)
+        times_ms = ops_ida.test_exists(conn, repeat)
     elif op == 'GET':
-        times_ms = cdn_ops.test_get(store, payload_size, repeat)
+        times_ms = ops_ida.test_get(conn, payload_size, repeat, nodes, k, workers)
     elif op == 'SET':
-        times_ms = cdn_ops.test_set(store, payload_size, repeat)
+        times_ms = ops_ida.test_set(conn, payload_size, repeat, nodes, k, workers)
     else:
         raise AssertionError(f'Unsupported operation {op}')
 
@@ -181,6 +188,9 @@ def run_cdn(
         payload_size_bytes=payload_size if op in ('GET', 'SET') else None,
         clients=clients,
         repeat=repeat,
+        n=nodes,
+        k=k,
+        workers=workers,
         total_time_ms=sum(times_ms),
         avg_time_ms=sum(times_ms) / len(times_ms),
         min_time_ms=min(times_ms),
@@ -248,8 +258,9 @@ def runner_cdn_concurrent(
     *,
     payload_sizes: list[int],
     clients: int,
+    chunks: int,
     repeat: int,
-    csv_file: str | None = None,
+    csv_file: str | None = None
 ) -> None:
     """Run matrix of test test configurations with a CDN server.
 
@@ -269,20 +280,33 @@ def runner_cdn_concurrent(
     for op in ops:
         for i, payload_size in enumerate(payload_sizes):
             for c in clients:
-                if i == 0 or op in ['GET', 'SET']:
-                    conn = CDNConnector(catalog=catalog, user_token=usertoken, gateway=cdn_address)
-                    store = Store('my-store', conn)
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
-                        futures = [executor.submit(run_cdn, store, op=op, payload_size=payload_size, repeat=repeat, clients=c) for _ in range(c)]
-                        # Wait for all futures to complete
-                        concurrent.futures.wait(futures)
+                for n in range(chunks):
+                    for k in range(1,n):
+                        for w in range(1,n+1):
+                            if i == 0 or op in ['GET', 'SET']:
+                                conn = CDNConnector(catalog=catalog, user_token=usertoken, gateway=cdn_address)
+                                #store = Store('my-store', conn)
+                                with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
+                                    futures = [executor.submit(
+                                            run_cdn, 
+                                            conn, 
+                                            op=op, 
+                                            payload_size=payload_size, 
+                                            repeat=repeat, 
+                                            clients=c,
+                                            nodes=n,
+                                            k=k,
+                                            workers=w
+                                        ) for _ in range(c)]
+                                    # Wait for all futures to complete
+                                    concurrent.futures.wait(futures)
 
-                        run_stats = futures[0] if c == 1 else max(futures, key=lambda x: x.result().max_time_ms)
-                        #max_object = max(futures, key=lambda x: x.result().max_time_ms)
-                        
-                        logger.log(TESTING_LOG_LEVEL, run_stats.result())
-                        if csv_file is not None:
-                            csv_logger.log(run_stats.result())
+                                    run_stats = futures[0] if c == 1 else max(futures, key=lambda x: x.result().max_time_ms)
+                                    #max_object = max(futures, key=lambda x: x.result().max_time_ms)
+                                    
+                                    logger.log(TESTING_LOG_LEVEL, run_stats.result())
+                                    if csv_file is not None:
+                                        csv_logger.log(run_stats.result())
 
     if csv_file is not None:
         csv_logger.close()
@@ -373,6 +397,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='User token to access to CDN services',
     )
     parser.add_argument(
+        '--chunks',
+        type=int,
+        default=1,
+        help='Number of nodes to use in the CDN'
+    )
+    parser.add_argument(
+        '--parallel-chunks',
+        type=bool,
+        default=True,
+        help='Parallel chunks'
+    )
+    parser.add_argument(
         '--ops',
         choices=['GET', 'SET', 'EXISTS', 'EVICT'],
         nargs='+',
@@ -438,6 +474,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
         )
     elif args.backend == 'CDN':
+        print(args.chunks)
         runner_cdn_concurrent(
                 args.cdn,
                 args.cdn_usertoken,
@@ -445,8 +482,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.ops,
                 payload_sizes=args.payload_sizes,
                 clients=args.clients,
+                chunks=args.chunks,
                 repeat=args.repeat,
-                csv_file=args.csv_file,
+                csv_file=args.csv_file
             )
         # if args.clients > 1:
         #     runner_cdn_concurrent(

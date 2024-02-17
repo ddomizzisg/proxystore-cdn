@@ -131,3 +131,9 @@ dmypy.json
 .pyre/
 
 .venv
+*.csv
+proxystore/cdn/output.txt
+*.ods
+tests/bechmark/cdn/pruebas.ods
+tests/bechmark/cdn/pruebas.ods
+tests/bechmark/cdn/.~lock.HOLA.csv\#
