@@ -176,7 +176,8 @@ class CDNConnector:
         return CDNKey(cdn_key=str(uuid.uuid4()))
 
     def put(self, data: bytes = None, filepath: str = None, is_encrypted: bool = False,
-            number_of_chunks: int = 1, required_chunks: int = 1, disperse="SINGLE") -> CDNKey:
+            number_of_chunks: int = 1, required_chunks: int = 1, disperse: str = "SINGLE", 
+            parallel: bool = True, workers: int = 1) -> CDNKey:
         # Read data from file if data is null and a filepath is received
 
         name = time.time() if filepath is None else os.path.basename(filepath)
@@ -206,7 +207,8 @@ class CDNConnector:
                 is_encrypted=is_encrypted,
                 chunks=number_of_chunks,
                 required_chunks=required_chunks,
-                disperse=disperse
+                disperse=disperse,
+                max_workers=workers
             )
         except requests.exceptions.RequestException as e:
             assert e.response is not None
