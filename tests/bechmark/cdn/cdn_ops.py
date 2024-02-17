@@ -32,19 +32,20 @@ def test_get(
     repeat: int = 1,
 ) -> list[float]:
     times_ms: list[float] = []
-
+    #print(repeat)
     data = randbytes(payload_size_bytes)
-    key = store.put(data)
+    #key = store.put(data)
     
     for i in range(repeat):
+        key = store.put(data)
+        #print(i)
         start = time.perf_counter_ns()
         data_ = store.get(key)
         end = time.perf_counter_ns()
         times_ms.append((end - start) / 1e6)
         del data_
-
-    # Evict key immediately to keep memory usage low
-    store.evict(key)
+        # Evict key immediately to keep memory usage low
+        store.evict(key)
 
     return times_ms
 

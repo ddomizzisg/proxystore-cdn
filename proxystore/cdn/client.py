@@ -58,7 +58,7 @@ def get(
         params={"key": key,
                 "tokenuser": token_user}
     )
-
+    #printi(response.text)
     if response.status_code == 200:
         route = response.json()["data"]["routes"][0]["route"]
         get_ = requests.get if session is None else session.get
@@ -66,8 +66,6 @@ def get(
             f'http://{route}',
             stream=True,
         )
-        
-        #print(response.text)
 
         # Status code 404 is only returned if there's no data associated with the
         # provided key.
