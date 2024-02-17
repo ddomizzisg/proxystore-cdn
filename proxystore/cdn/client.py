@@ -108,9 +108,11 @@ def put(
                 "tokenuser": token_user, "catalog": catalog,
                 "is_encrypted": int(is_encrypted), "chunks": chunks,
                 "required_chunks": required_chunks, "disperse": disperse}
+    )
 
     if response.status_code == 201:
         storage_node = response.json()["nodes"][0]["route"]
+        #print(storage_node)
         response = post(
             f'http://{storage_node}',
             headers={'Content-Type': 'application/octet-stream'},
