@@ -280,33 +280,56 @@ def runner_cdn_concurrent(
     for op in ops:
         for i, payload_size in enumerate(payload_sizes):
             for c in clients:
-                for n in range(chunks):
-                    for k in range(1,n):
-                        for w in range(1,n+1):
-                            if i == 0 or op in ['GET', 'SET']:
-                                conn = CDNConnector(catalog=catalog, user_token=usertoken, gateway=cdn_address)
-                                #store = Store('my-store', conn)
-                                with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
-                                    futures = [executor.submit(
-                                            run_cdn, 
-                                            conn, 
-                                            op=op, 
-                                            payload_size=payload_size, 
-                                            repeat=repeat, 
-                                            clients=c,
-                                            nodes=n,
-                                            k=k,
-                                            workers=w
-                                        ) for _ in range(c)]
-                                    # Wait for all futures to complete
-                                    concurrent.futures.wait(futures)
+                if chunks > 1:
+                    for n in range(chunks):
+                        for k in range(1,n):
+                            for w in range(n+1):
+                                if i == 0 or op in ['GET', 'SET']:
+                                    conn = CDNConnector(catalog=catalog, user_token=usertoken, gateway=cdn_address)
+                                    #store = Store('my-store', conn)
+                                    with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
+                                        futures = [executor.submit(
+                                                run_cdn, 
+                                                conn, 
+                                                op=op, 
+                                                payload_size=payload_size, 
+                                                repeat=repeat, 
+                                                clients=c,
+                                                nodes=n,
+                                                k=k,
+                                                workers=w
+                                            ) for _ in range(c)]
+                                        # Wait for all futures to complete
+                                        concurrent.futures.wait(futures)
 
-                                    run_stats = futures[0] if c == 1 else max(futures, key=lambda x: x.result().max_time_ms)
-                                    #max_object = max(futures, key=lambda x: x.result().max_time_ms)
-                                    
-                                    logger.log(TESTING_LOG_LEVEL, run_stats.result())
-                                    if csv_file is not None:
-                                        csv_logger.log(run_stats.result())
+                                        run_stats = futures[0] if c == 1 else max(futures, key=lambda x: x.result().max_time_ms)
+                                        #max_object = max(futures, key=lambda x: x.result().max_time_ms)
+                                        
+                                        logger.log(TESTING_LOG_LEVEL, run_stats.result())
+                                        if csv_file is not None:
+                                            csv_logger.log(run_stats.result())
+                else:
+                    if i == 0 or op in ['GET', 'SET']:
+                        conn = CDNConnector(catalog=catalog, user_token=usertoken, gateway=cdn_address)
+                        #store = Store('my-store', conn)
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
+                            futures = [executor.submit(
+                                    run_cdn, 
+                                    conn, 
+                                    op=op, 
+                                    payload_size=payload_size, 
+                                    repeat=repeat, 
+                                    clients=c
+                                ) for _ in range(c)]
+                            # Wait for all futures to complete
+                            concurrent.futures.wait(futures)
+
+                            run_stats = futures[0] if c == 1 else max(futures, key=lambda x: x.result().max_time_ms)
+                            #max_object = max(futures, key=lambda x: x.result().max_time_ms)
+                            
+                            logger.log(TESTING_LOG_LEVEL, run_stats.result())
+                            if csv_file is not None:
+                                csv_logger.log(run_stats.result())
 
     if csv_file is not None:
         csv_logger.close()
