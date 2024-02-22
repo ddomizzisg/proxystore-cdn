@@ -20,15 +20,15 @@ def test_set(
     for i in range(repeat):
         data = randbytes(payload_size_bytes)
         start = time.perf_counter_ns()
-        key = connector.put(
+        key,time_metrics = connector.put(
                 data, 
                 number_of_chunks=number_of_chunks, 
                 required_chunks=required_chunks, 
-                disperse=disperse,  
                 workers=workers
             )
         end = time.perf_counter_ns()
-        times_ms.append((end - start) / 1e6)
+        time_metrics["total_time"] = (end - start) / 1e6
+        times_ms.append(time_metrics)
 
         # Evict key immediately to keep memory usage low
         del data
@@ -52,9 +52,8 @@ def test_get(
         end = time.perf_counter_ns()
         times_ms.append((end - start) / 1e6)
         del data_
-
     # Evict key immediately to keep memory usage low
     connector.evict(key)
-
+    
     return times_ms
 

@@ -3,26 +3,38 @@ from proxystore.store import register_store
 from proxystore.store import Store
 from proxystore.connectors.cdn import CDNConnector
 import time
+import math
+from bechmark.cdn import utils
 
 conn = CDNConnector("68b97d2a3a9e9b51416e82cc5b31925df6ebab307157f1a2cb8f915f1004acd4")
 
-start = time.time()
-print(
-    conn.put(
-        data=b'hello world', 
-        filepath=None, 
-        is_encrypted=False, 
-        number_of_chunks=2, 
-        required_chunks=1, 
-        disperse="IDA", 
-        parallel=True,
-        workers=1
+data = utils.randbytes(100000)
+
+times = []
+for i in range(1):
+
+    start = time.time()
+    print(
+        #conn.put(
+        ##    data=data, 
+        #    filepath=None, 
+        #    is_encrypted=False, 
+        #    number_of_chunks=5, 
+        #    required_chunks=3, 
+        #    disperse="IDA", 
+        #    workers=5
+        #)
+        
+        conn.put(
+            data=data, 
+            filepath=None, 
+            is_encrypted=False
+        )
     )
-)
-
-end = time.time()
-
-print(end - start)
+    end = time.time()
+    times.append(end - start)
+    
+print(math.fsum(times) / len(times))
 
 #store = Store('my-store', conn)
 

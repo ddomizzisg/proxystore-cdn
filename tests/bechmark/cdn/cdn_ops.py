@@ -16,15 +16,15 @@ def test_set(
     for i in range(repeat):
         data = randbytes(payload_size_bytes)
         start = time.perf_counter_ns()
-        key = store.put(data)
+        key, metric_times = store.put(data)
         end = time.perf_counter_ns()
         times_ms.append((end - start) / 1e6)
 
         # Evict key immediately to keep memory usage low
         del data
         store.evict(key)
-
-    return times_ms
+    metric_times["total_time"] = times_ms
+    return metric_times
 
 def test_get(
     store: Store,

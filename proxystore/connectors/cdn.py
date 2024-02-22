@@ -176,8 +176,8 @@ class CDNConnector:
         return CDNKey(cdn_key=str(uuid.uuid4()))
 
     def put(self, data: bytes = None, filepath: str = None, is_encrypted: bool = False,
-            number_of_chunks: int = 1, required_chunks: int = 1, disperse: str = "SINGLE", 
-            parallel: bool = True, workers: int = 1) -> CDNKey:
+            number_of_chunks: int = 1, required_chunks: int = 1, 
+            workers: int = 1) -> CDNKey:
         # Read data from file if data is null and a filepath is received
 
         name = time.time() if filepath is None else os.path.basename(filepath)
@@ -195,7 +195,7 @@ class CDNConnector:
         object_id = CDNKey(cdn_key=str(uuid.uuid4()))
 
         try:
-            client.put(
+            time_metrics = client.put(
                 address=self.gateway,
                 key=object_id.cdn_key,
                 data_hash=obj_sha3_256,
@@ -207,7 +207,6 @@ class CDNConnector:
                 is_encrypted=is_encrypted,
                 chunks=number_of_chunks,
                 required_chunks=required_chunks,
-                disperse=disperse,
                 max_workers=workers
             )
         except requests.exceptions.RequestException as e:
@@ -216,7 +215,7 @@ class CDNConnector:
                 f'Put failed with error code {e.response.status_code}.',
             ) from e
 
-        return object_id
+        return object_id, time_metrics
 
     def put_batch(self, objs: Sequence[bytes] = None, files: Sequence[CDNKey] = None) -> list[str]:
         """Put a batch of serialized objects in the store.

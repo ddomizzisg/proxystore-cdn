@@ -54,7 +54,10 @@ class RunStats(NamedTuple):
     k: int | None
     max_time_ms: float
     stdev_time_ms: float
-    avg_bandwidth_mbps: float | None
+    metadata_time: float | None
+    data_upload_time: float | None
+    throughput: float | None
+    throughput_upload: float | None
 
 
 async def run_endpoint(
@@ -170,11 +173,41 @@ def run_cdn(
         times_ms = ops_ida.test_get(conn, payload_size, repeat, nodes, k, workers)
     elif op == 'SET':
         times_ms = ops_ida.test_set(conn, payload_size, repeat, nodes, k, workers)
+        
+        total_time = sum([x["total_time"] for x in times_ms])
+        avg_total_time = total_time / len(times_ms) 
+        avg_metadata_time = sum([x["metadata_time"] for x in times_ms]) / len(times_ms) 
+        avg_data_upload_time = sum([x["data_upload_time"] for x in times_ms]) / len(times_ms) 
+        payload_mb = payload_size / 1e6
+        throughput = payload_mb / avg_total_time
+        throughput_upload = payload_mb / (avg_data_upload_time / 1000)
+        
+        return RunStats(
+            backend='CDN',
+            op=op,
+            payload_size_bytes=payload_size if op in ('GET', 'SET') else None,
+            clients=clients,
+            repeat=repeat,
+            n=nodes,
+            k=k,
+            workers=workers,
+            total_time_ms=total_time,
+            avg_time_ms=total_time,
+            min_time_ms=min([x["total_time"] for x in times_ms]),
+            max_time_ms=max([x["total_time"] for x in times_ms]),
+            stdev_time_ms=(
+                statistics.stdev([x["total_time"] for x in times_ms]) if len(times_ms) > 1 else 0.0
+            ),
+            throughput=throughput,
+            metadata_time=avg_metadata_time,
+            data_upload_time=avg_data_upload_time,
+            throughput_upload=throughput_upload
+        )
+        
     else:
         raise AssertionError(f'Unsupported operation {op}')
 
-    if len(times_ms) >= 3:
-        times_ms = times_ms[1:-1]
+
 
     avg_time_s = sum(times_ms) / 1000 / len(times_ms)
     payload_mb = payload_size / 1e6
@@ -281,7 +314,7 @@ def runner_cdn_concurrent(
         for i, payload_size in enumerate(payload_sizes):
             for c in clients:
                 for n in range(1,chunks+1):
-                    print(n,chunks)
+                    #print(n,chunks)
                     if n > 1:
                         for k in range(1,n):
                             for w in range(1,n+1):
@@ -289,7 +322,7 @@ def runner_cdn_concurrent(
                                     conn = CDNConnector(catalog=catalog, user_token=usertoken, gateway=cdn_address)
                                     #store = Store('my-store', conn)
                                     with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
-                                        print(n)
+                                        #print(n)
                                         futures = [executor.submit(
                                                 run_cdn, 
                                                 conn, 
