@@ -137,3 +137,4 @@ proxystore/cdn/output.txt
 tests/bechmark/cdn/pruebas.ods
 tests/bechmark/cdn/pruebas.ods
 tests/bechmark/cdn/.~lock.HOLA.csv\#
+*.ods
