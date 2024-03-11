@@ -250,6 +250,7 @@ def upload_to_storage_node(
         stream=True,
     )
     
+    
     if not response.ok:
         raise requests.exceptions.RequestException(
             f'Storage node {url} returned HTTP error code {response.status_code}. '

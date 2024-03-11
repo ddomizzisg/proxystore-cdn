@@ -192,7 +192,7 @@ def run_cdn(
             k=k,
             workers=workers,
             total_time_ms=total_time,
-            avg_time_ms=total_time,
+            avg_time_ms=avg_total_time,
             min_time_ms=min([x["total_time"] for x in times_ms]),
             max_time_ms=max([x["total_time"] for x in times_ms]),
             stdev_time_ms=(
