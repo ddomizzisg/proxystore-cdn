@@ -4,7 +4,7 @@ from option import Result
 import requests
 
 def evict(
-    peers: list,
+    routers: list,
     key: str,
     bucket_id: str = "default2",
     client_id: str = "client-0",
@@ -13,10 +13,8 @@ def evict(
 ) -> None:
     client = Client(
         client_id    = client_id,
-        peers        = peers,
+        routers        = routers,
         debug        = False,
-        daemon       = True, 
-        disable_log = True ,
         lb_algorithm = lb_algorithm,
         max_workers  = workers,
         bucket_id= bucket_id 
@@ -36,7 +34,7 @@ def evict(
         )
 
 def exists(
-    peers: list,
+    routers: list,
     key: str,
     bucket_id: str = "default2",
     client_id: str = "client-0",
@@ -46,16 +44,14 @@ def exists(
     
     client = Client(
         client_id    = client_id,
-        peers        = peers,
+        routers        = routers,
         debug        = False,
-        daemon       = True, 
-        disable_log = True ,
         lb_algorithm = lb_algorithm,
         max_workers  = workers,
         bucket_id= bucket_id 
     )
     
-    res = client.get(key = key, bucket_id=bucket_id)
+    res = client.get_metadata(key = key, bucket_id=bucket_id)
     
     # Get result from future
     response = res.result()
@@ -63,23 +59,21 @@ def exists(
     if response:
         return True
     else:
-        False
+        return False
 
 def get(
-    peers: list,
+    routers: list,
     key: str,
     bucket_id: str = "default2",
     client_id: str = "client-0",
     workers: int = 1,
     lb_algorithm: str = "2CHOICES_UF",
 ) -> bytes | None:
-    print(peers)
+    
     client = Client(
         client_id    = client_id,
-        peers        = peers,
+        routers        = routers,
         debug        = False,
-        daemon       = True, 
-        disable_log = True ,
         lb_algorithm = lb_algorithm,
         max_workers  = workers,
         bucket_id= bucket_id 
@@ -97,7 +91,7 @@ def get(
 
 def put(
     data: bytes,
-    peers: list,
+    routers: list,
     bucket_id: str = "default2",
     client_id: str = "client-0",
     key: str = "ball-0",
@@ -107,10 +101,8 @@ def put(
     
     client = Client(
         client_id    = client_id,
-        peers        = peers,
+        routers        = routers,
         debug        = False,
-        daemon       = True, 
-        disable_log = True ,
         max_workers  = workers,
         lb_algorithm =lb_algorithm,
         bucket_id= bucket_id 

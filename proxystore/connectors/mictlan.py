@@ -38,12 +38,12 @@ class MictlanKey(NamedTuple):
 class MictlanConnector:
     def __init__(self, 
                  bucket_id : str, 
-                 peers: str,
+                 routers: str,
                  client_id : str = "client-0",
                  workers : int = 1,
                  lb_algorithm : str = "2CHOICES_UF"
                 ):
-        self.peers = list(peers)
+        self.routers = list(routers)
         self.bucket_id = bucket_id
         self.client_id = client_id
         self.workers = workers
@@ -96,7 +96,7 @@ class MictlanConnector:
     ) -> None:
         try:    
             p2p.evict(
-                peers = self.peers,
+                routers = self.routers,
                 key = key.ball_id,
                 bucket_id = key.bucket_id,
                 client_id = self.client_id,
@@ -114,7 +114,7 @@ class MictlanConnector:
     ) -> bool:
         try:    
             return p2p.exists(
-                peers = self.peers,
+                routers = self.routers,
                 key = key.ball_id,
                 bucket_id = key.bucket_id,
                 client_id = self.client_id,
@@ -132,7 +132,7 @@ class MictlanConnector:
     ) -> bytes | None:
         try:    
             return p2p.get(
-                peers = self.peers,
+                routers = self.routers,
                 key = key.ball_id,
                 bucket_id = key.bucket_id,
                 client_id = self.client_id,
@@ -156,7 +156,7 @@ class MictlanConnector:
 
         p2p.put(
             data = data,
-            peers = self.peers,
+            routers = self.routers,
             bucket_id = object_id.bucket_id,
             key = object_id.ball_id,
             client_id = self.client_id,
@@ -174,7 +174,7 @@ class MictlanConnector:
         try:    
             p2p.put(
                 data = data,
-                peers = self.peers,
+                routers = self.routers,
                 key = key.ball_id,
                 bucket_id = key.bucket_id,
                 client_id = self.client_id,

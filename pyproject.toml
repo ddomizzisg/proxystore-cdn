@@ -58,7 +58,7 @@ mictlanx = [
     "certifi==2023.7.22",
     "cffi==1.15.1",
     "charset-normalizer==3.2.0",
-    "cryptography==42.0.0",
+    "cryptography==39.0.2",
     "decorator==5.1.1",
     "durations==0.3.3",
     "idna==3.4",
@@ -73,6 +73,8 @@ mictlanx = [
     "retry==0.9.2",
     "humanfriendly==10.0",
     "virtualenv==20.25.0",
+    "httpx==0.26.0",
+    "mictlanx==0.0.123"
 ]
 extensions = [
     "proxystore-ex",
