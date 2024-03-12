@@ -20,17 +20,14 @@ def evict(
         bucket_id= bucket_id 
     )
     
-    #res = client.evict(key = key, bucket_id=bucket_id)
+    res = client.delete(key = key, bucket_id=bucket_id)
     
-    # Get result from future
-    #response = res.result()
-    
-    if response:
+    if res:
         return True
     else:
         raise requests.exceptions.RequestException(
             f'Peer returned an error. '
-            f'{response}'
+            f'{res}'
         )
 
 def exists(

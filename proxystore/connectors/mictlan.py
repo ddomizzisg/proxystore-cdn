@@ -75,6 +75,7 @@ class MictlanConnector:
         the connector object.
         """
         return {
+            'routers': self.routers,
             'bucket_id': self.bucket_id,
             'client_id': self.client_id,
             'workers': self.workers,
