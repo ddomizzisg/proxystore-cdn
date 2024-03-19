@@ -13,7 +13,7 @@ from typing import Any
 from typing import NamedTuple
 from typing import Sequence
 
-from proxystore.cdn import client
+from proxystore.cdn.client import Client
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -50,6 +50,7 @@ class CDNConnector:
         self.token_user = parser.get('credentials', 'token_user') if user_token is None else user_token
         self.gateway = parser.get('services', 'gateway') if gateway is None else gateway
         self.catalog = catalog
+        self.client = Client(self.gateway)
         
     def __enter__(self) -> Self:
         return self
@@ -185,20 +186,12 @@ class CDNConnector:
         if data is None and filepath is not None:
             data = open(filepath, mode='rb').read()
 
-        # Get the hash of the data
-        # encode the string
-        sha3_256 = hashlib.sha3_256()
-        sha3_256.update(data)
-        obj_sha3_256 = sha3_256.hexdigest()
-
         # calculate the object id
         object_id = CDNKey(cdn_key=str(uuid.uuid4()))
 
         try:
-            time_metrics = client.put(
-                address=self.gateway,
+            time_metrics = self.client.put(
                 key=object_id.cdn_key,
-                data_hash=obj_sha3_256,
                 name=name,
                 data=data,
                 token_user=self.token_user,

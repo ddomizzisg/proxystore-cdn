@@ -113,28 +113,24 @@ class Client(object):
             disperse = "IDA"
             return put_chunks(**locals())
         else:
-            post = requests.post if session is None else session.post
+            put = requests.put if session is None else session.put
             disperse = "SINGLE"
             
             start = time.perf_counter_ns()
-            response = post(
-                f'http://{self.metadata_server}/api/files/push',
-                params={"name": name, "size": len(data), "hash": data_hash, "key": key,
-                        "tokenuser": token_user, "catalog": catalog,
+            
+            print(self.metadata_server)
+            
+            response = put(
+                f'http://{self.metadata_server}/api/storage/{token_user}/{catalog}/{key}',
+                data={"name": name, "size": len(data), "hash": data_hash, "key": key,
                         "is_encrypted": int(is_encrypted), "chunks": chunks,
-                        "required_chunks": required_chunks, "disperse": disperse}
+                        "required_chunks": required_chunks, "data": data},
             )
             
+
             if response.status_code == 201:
-                storage_node = response.json()["nodes"][0]["route"]
-                end = time.perf_counter_ns()
-                metadata_time = (end - start)  / 1e6
-                
-                start = time.perf_counter_ns()
-                self.upload_to_storage_node(storage_node, data, token_user, session)
                 end = time.perf_counter_ns()
                 data_upload_time = (end - start)  / 1e6
-                
             else:
                 raise requests.exceptions.RequestException(
                     f'Metadata server returned HTTP error code {response.status_code}. '
@@ -142,7 +138,7 @@ class Client(object):
                     response=response,
                 )
         
-        return {"metadata_time": metadata_time, "data_upload_time": data_upload_time}
+        return data_upload_time
 
     def put_chunks(
         self,
