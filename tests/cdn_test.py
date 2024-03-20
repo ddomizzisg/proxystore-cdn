@@ -2,6 +2,7 @@ from proxystore.proxy import Proxy
 from proxystore.store import register_store
 from proxystore.store import Store
 from proxystore.connectors.cdn import CDNConnector
+from proxystore.connectors.cdn import CDNKey
 import time
 import math
 from bechmark.cdn import utils
@@ -9,26 +10,39 @@ from bechmark.cdn import utils
 import proxystore.cdn.client as client
 
 
-conn = CDNConnector("68b97d2a3a9e9b51416e82cc5b31925df6ebab307157f1a2cb8f915f1004acd4")
+conn = CDNConnector("dynostore")
 
 data = utils.randbytes(100000)
-data = b'hello world'
+data = b'bytes(500)'
 
-times = []
-for i in range(1):
+key = CDNKey(cdn_key="4e7b8448-2835-44c6-8312-4c5a8670317c")
+print(conn.exists(key))
+key,time = conn.put(
+           data=data, 
+           filepath=None, 
+           is_encrypted=False
+       )
+print(key)
+print(conn.exists(key))
+#print(conn.get(key))
+#conn.evict(key)
+#print(conn.get(key))
 
-    start = time.time()
-    print(        
-        conn.put(
-            data=data, 
-            filepath=None, 
-            is_encrypted=False
-        )
-    )
-    end = time.time()
-    times.append(end - start)
+#times = []
+#for i in range(1):
+
+#    start = time.time()
+#    print(        
+#        conn.put(
+#            data=data, 
+#            filepath=None, 
+#            is_encrypted=False
+#        )
+#    )
+#    end = time.time()
+#    times.append(end - start)
     
-print(math.fsum(times) / len(times))
+#print(math.fsum(times) / len(times))
 
 #store = Store('my-store', conn)
 

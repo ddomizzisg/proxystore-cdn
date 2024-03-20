@@ -22,7 +22,7 @@ class Client(object):
     ) -> None:
         delete_ = requests.delete if session is None else session.delete
         response = delete_(
-            f'http://{self.metadata_server}/api/files/{token_user}/delete/{key}'
+            f'http://{self.metadata_server}/api/storage/{token_user}/{key}'
         )
         
         if not response.ok:
@@ -38,11 +38,11 @@ class Client(object):
         token_user: str = None,
         session: requests.Session | None = None
     ) -> bool:
+        
         get_ = requests.get if session is None else session.get
         response = get_(
-            f'http://{self.metadata_server}/api/files/{token_user}/exists/{key}'
+            f'http://{self.metadata_server}/api/storage/{token_user}/{key}/exists'
         )
-
         if not response.ok:
             raise requests.exceptions.RequestException(
                 f'Server returned HTTP error code {response.status_code}. '
@@ -59,37 +59,59 @@ class Client(object):
         token_user: str = None,
         session: requests.Session | None = None
     ) -> bytes | None:
-        post = requests.post if session is None else session.post
-        response = post(
-            f'http://{self.metadata_server}/api/files/pull',
-            params={"key": key,
-                    "tokenuser": token_user}
+        get = requests.get if session is None else session.get
+        
+        response = get(
+            f'http://{self.metadata_server}/api/storage/{token_user}/{key}'
         )
         
-        if response.status_code == 200:
-            route = response.json()["data"]["routes"][0]["route"]
-            get_ = requests.get if session is None else session.get
-            response = get_(
-                f'http://{route}',
-                stream=True,
-            )
-
-            # Status code 404 is only returned if there's no data associated with the
-            # provided key.
-            if response.status_code == 404:
-                return None
-
-            if not response.ok:
-                raise requests.exceptions.RequestException(
-                    f'Endpoint returned HTTP error code {response.status_code}. '
+        
+        if response.status_code == 404:
+            raise requests.exceptions.RequestException(
+                    f'DynoStore returned HTTP error code {response.status_code}. '
                     f'{response.text}',
                     response=response,
                 )
-
+        #print(response.status_code, flush=True)
+        print(response.text)
+        
+        if response.status_code == 200:
+            #print(response.json(), flush=True)
+            #databytes = bytes(response.json()["data"][0], 'utf-8')
+            
             data = bytearray()
             for chunk in response.iter_content(chunk_size=None):
                 data += chunk
             return bytes(data)
+    
+            #data = response.json["data"]
+            #return data    
+        
+        #     route = response.json()["data"]["routes"][0]["route"]
+        #     get_ = requests.get if session is None else session.get
+        #     response = get_(
+        #         f'http://{route}',
+        #         stream=True,
+        #     )
+            
+            
+
+            # Status code 404 is only returned if there's no data associated with the
+            # provided key.
+            # if response.status_code == 404:
+            #     return None
+
+            # if not response.ok:
+            #     raise requests.exceptions.RequestException(
+            #         f'Endpoint returned HTTP error code {response.status_code}. '
+            #         f'{response.text}',
+            #         response=response,
+            #     )
+
+            # data = bytearray()
+            # for chunk in response.iter_content(chunk_size=None):
+            #     data += chunk
+            # return bytes(data)
 
     def put(
         self,
@@ -114,11 +136,9 @@ class Client(object):
             return put_chunks(**locals())
         else:
             put = requests.put if session is None else session.put
-            disperse = "SINGLE"
+        
             
             start = time.perf_counter_ns()
-            
-            print(self.metadata_server)
             
             response = put(
                 f'http://{self.metadata_server}/api/storage/{token_user}/{catalog}/{key}',

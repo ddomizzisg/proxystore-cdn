@@ -98,8 +98,7 @@ class CDNConnector:
             If an object associated with the key exists.
         """
         try:
-            return client.exists(
-                self.gateway,
+            return self.client.exists(
                 key.cdn_key,
                 self.token_user,
                 session=self._session,
@@ -117,8 +116,7 @@ class CDNConnector:
             key: Key associated with object to evict.
         """
         try:
-            client.evict(
-                self.gateway,
+            self.client.evict(
                 key.cdn_key,
                 self.token_user,
                 session=self._session,
@@ -131,8 +129,7 @@ class CDNConnector:
 
     def get(self, key: CDNKey):
         try:
-            return client.get(
-                self.gateway,
+            return self.client.get(
                 key.cdn_key,
                 self.token_user,
                 session=self._session,
@@ -251,7 +248,7 @@ class CDNConnector:
         obj_sha3_256 = sha3_256.hexdigest()
 
         try:
-            client.put(
+            self.client.put(
                 address=self.gateway,
                 key=key,
                 data_hash=obj_sha3_256,
