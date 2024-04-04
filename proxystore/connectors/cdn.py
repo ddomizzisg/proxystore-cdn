@@ -106,7 +106,7 @@ class CDNConnector:
         except requests.exceptions.RequestException as e:
             assert e.response is not None
             raise CDNConnectorError(
-                f'Exists failed with error code {e.response.status_code}.',
+                f'Exists failed with error code {v}.',
             ) from e
             
     def evict(self, key: CDNKey) -> None:
@@ -124,7 +124,7 @@ class CDNConnector:
         except requests.exceptions.RequestException as e:
             assert e.response is not None
             raise CDNConnectorError(
-                f'Evict failed with error code {e.response.status_code}.',
+                f'Evict failed with error code {v}.',
             ) from e
 
     def get(self, key: CDNKey):
@@ -200,12 +200,12 @@ class CDNConnector:
                 max_workers=workers
             )
         except requests.exceptions.RequestException as e:
-            assert e.response is not None
+            #assert e.response is not None
             raise CDNConnectorError(
-                f'Put failed with error code {e.response.status_code}.',
+                f'Put failed with error code {str(e)}.',
             ) from e
 
-        return object_id, time_metrics
+        return object_id #, time_metrics
 
     def put_batch(self, objs: Sequence[bytes] = None, files: Sequence[CDNKey] = None) -> list[str]:
         """Put a batch of serialized objects in the store.
@@ -265,6 +265,6 @@ class CDNConnector:
         except requests.exceptions.RequestException as e:
             assert e.response is not None
             raise CDNConnectorError(
-                f'Put failed with error code {e.response.status_code}.',
+                f'Put failed with error code {v}.',
             ) from e
             

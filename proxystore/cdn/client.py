@@ -8,6 +8,8 @@ from concurrent.futures import ProcessPoolExecutor
 import pickle
 import time
 import hashlib
+import io
+import json
 
 class Client(object):
     
@@ -22,7 +24,7 @@ class Client(object):
     ) -> None:
         delete_ = requests.delete if session is None else session.delete
         response = delete_(
-            f'http://{self.metadata_server}/api/storage/{token_user}/{key}'
+            f'http://{self.metadata_server}/storage/{token_user}/{key}'
         )
         
         if not response.ok:
@@ -41,7 +43,7 @@ class Client(object):
         
         get_ = requests.get if session is None else session.get
         response = get_(
-            f'http://{self.metadata_server}/api/storage/{token_user}/{key}/exists'
+            f'http://{self.metadata_server}/storage/{token_user}/{key}/exists'
         )
         if not response.ok:
             raise requests.exceptions.RequestException(
@@ -62,7 +64,7 @@ class Client(object):
         get = requests.get if session is None else session.get
         
         response = get(
-            f'http://{self.metadata_server}/api/storage/{token_user}/{key}'
+            f'http://{self.metadata_server}/storage/{token_user}/{key}'
         )
         
         
@@ -73,7 +75,7 @@ class Client(object):
                     response=response,
                 )
         #print(response.status_code, flush=True)
-        print(response.text)
+        #print(response.text)
         
         if response.status_code == 200:
             #print(response.json(), flush=True)
@@ -82,6 +84,7 @@ class Client(object):
             data = bytearray()
             for chunk in response.iter_content(chunk_size=None):
                 data += chunk
+            print(data)
             return bytes(data)
     
             #data = response.json["data"]
@@ -131,34 +134,53 @@ class Client(object):
         name = data_hash if name is None else name
 
         
-        if chunks > 1:
-            disperse = "IDA"
-            return put_chunks(**locals())
-        else:
-            put = requests.put if session is None else session.put
-        
+        # if chunks > 1:
+        #     disperse = "IDA"
+        #     return put_chunks(**locals())
+        # else:
+        #     put = requests.put if session is None else session.put
+        #     fake_file = io.BytesIO(data)
             
-            start = time.perf_counter_ns()
-            
-            response = put(
-                f'http://{self.metadata_server}/api/storage/{token_user}/{catalog}/{key}',
-                data={"name": name, "size": len(data), "hash": data_hash, "key": key,
-                        "is_encrypted": int(is_encrypted), "chunks": chunks,
-                        "required_chunks": required_chunks, "data": data},
-            )
-            
+        #     payload = {"name": name, "size": len(data), "hash": data_hash, "key": key,
+        #                  "is_encrypted": int(is_encrypted), "chunks": chunks,
+        #                  "required_chunks": required_chunks}
+        #     files   = [
+        #                 ('json', ('payload.json', json.dumps(payload), 'application/json')),
+        #                 ('data', ('data.bin', fake_file, 'application/octet-stream'))
+        #             ]
+        #     response       = requests.put(f'http://{self.metadata_server}/storage/{token_user}/{catalog}/{key}', files=files)
 
-            if response.status_code == 201:
-                end = time.perf_counter_ns()
-                data_upload_time = (end - start)  / 1e6
-            else:
-                raise requests.exceptions.RequestException(
-                    f'Metadata server returned HTTP error code {response.status_code}. '
-                    f'{response.text}',
-                    response=response,
-                )
+        #     if response.status_code == 201:
+        #         pass
+        #     else:
+        #         raise requests.exceptions.RequestException(
+        #             f'Metadata server returned HTTP error code {response.status_code}. '
+        #             f'{response.text}',
+        #             response=response,
+        #         )
         
-        return data_upload_time
+        #return data_upload_time
+        
+        put = requests.put if session is None else session.put
+        fake_file = io.BytesIO(data)
+        
+        payload = {"name": name, "size": len(data), "hash": data_hash, "key": key,
+                        "is_encrypted": int(is_encrypted), "chunks": chunks,
+                        "required_chunks": required_chunks}
+        files   = [
+                    ('json', ('payload.json', json.dumps(payload), 'application/json')),
+                    ('data', ('data.bin', fake_file, 'application/octet-stream'))
+                ]
+        response       = requests.put(f'http://{self.metadata_server}/storage/{token_user}/{catalog}/{key}', files=files)
+
+        if response.status_code == 201:
+            pass
+        else:
+            raise requests.exceptions.RequestException(
+                f'Metadata server returned HTTP error code {response.status_code}. '
+                f'{response.text}',
+                response=response,
+            )
 
     def put_chunks(
         self,

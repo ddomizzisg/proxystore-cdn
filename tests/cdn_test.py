@@ -5,50 +5,20 @@ from proxystore.connectors.cdn import CDNConnector
 from proxystore.connectors.cdn import CDNKey
 import time
 import math
-from bechmark.cdn import utils
-
-import proxystore.cdn.client as client
-
-
-conn = CDNConnector("dynostore")
-
-data = utils.randbytes(100000)
-data = b'bytes(500)'
-
-key = CDNKey(cdn_key="4e7b8448-2835-44c6-8312-4c5a8670317c")
-print(conn.exists(key))
-key,time = conn.put(
-           data=data, 
-           filepath=None, 
-           is_encrypted=False
-       )
-print(key)
-print(conn.exists(key))
-#print(conn.get(key))
-#conn.evict(key)
-#print(conn.get(key))
-
-#times = []
-#for i in range(1):
-
-#    start = time.time()
-#    print(        
-#        conn.put(
-#            data=data, 
-#            filepath=None, 
-#            is_encrypted=False
-#        )
-#    )
-#    end = time.time()
-#    times.append(end - start)
-    
-#print(math.fsum(times) / len(times))
-
-#store = Store('my-store', conn)
 
 # Store the object and get a proxy. The proxy acts
 # like a reference to the object.
-#data = 123
+connector = CDNConnector(catalog="proxystore")
+data = b'Hello World'
+
+key = connector.put(data, number_of_chunks=5, required_chunks=3)
+print(connector.get(key))
+#print(connector.exists(key))
+#connector.evict(key)
+#print(connector.exists(key))
+
+#store = Store('my-store', connector)
+#data = 3
 #proxy = store.proxy(data)
 #print(proxy ** 2)
 #print(isinstance(proxy, Proxy))
