@@ -57,3 +57,34 @@ def test_get(
     
     return times_ms
 
+def test_set_files(
+    connector: CDNConnector,
+    files: list[str],
+    repeat: int = 1,
+    number_of_chunks: int = 1,
+    required_chunks: int = 1,
+    workers: int = 1
+) -> list[float]:
+    times_ms: list[float] = []
+    
+    disperse = "IDA" if number_of_chunks > 1 else "SINGLE"
+
+    for i,f in enumerate(files):
+        data = open(f, "rb").read()
+        start = time.perf_counter_ns()
+        key,time_metrics = connector.put(
+                data, 
+                number_of_chunks=number_of_chunks, 
+                required_chunks=required_chunks, 
+                workers=workers
+            )
+        #print(time_metrics)
+        end = time.perf_counter_ns()
+        time_metrics["total_time"] = (end - start) / 1e6
+        times_ms.append(time_metrics)
+
+        # Evict key immediately to keep memory usage low
+        #del data
+        #connector.evict(key)
+
+    return times_ms

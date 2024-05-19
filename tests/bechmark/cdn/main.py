@@ -17,7 +17,8 @@ from typing import Literal
 from typing import NamedTuple
 from typing import Sequence
 import concurrent.futures
-
+import os
+import random
 
 from proxystore.endpoint.endpoint import Endpoint
 
@@ -127,27 +128,27 @@ async def run_endpoint(
         op=op,
         payload_size_bytes=payload_size if op in ('GET', 'SET') else None,
         repeat=repeat,
-        total_time_ms=sum(times_ms),
-        avg_time_ms=sum(times_ms) / len(times_ms),
-        min_time_ms=min(times_ms),
-        max_time_ms=max(times_ms),
+        total_time_ms=0,
+        avg_time_ms=0,
+        min_time_ms=0,
+        max_time_ms=0,
         stdev_time_ms=(
             statistics.stdev(times_ms) if len(times_ms) > 1 else 0.0
         ),
         avg_bandwidth_mbps=avg_bandwidth_mbps,
     )
 
-    
 
 def run_cdn(
-    conn : CDNConnector,
+    conn: CDNConnector,
     op: OP_TYPE,
     payload_size: int = 0,
     repeat: int = 3,
     clients: int = 1,
     nodes: int = 1,
     k: int = 1,
-    workers: int = 1
+    workers: int = 1,
+    files = None
 ) -> RunStats:
     """Run test for single operation and measure performance.
 
@@ -170,18 +171,63 @@ def run_cdn(
     elif op == 'EXISTS':
         times_ms = ops_ida.test_exists(conn, repeat)
     elif op == 'GET':
-        times_ms = ops_ida.test_get(conn, payload_size, repeat, nodes, k, workers)
+        times_ms = ops_ida.test_get(
+            conn, payload_size, repeat, nodes, k, workers)
     elif op == 'SET':
-        times_ms = ops_ida.test_set(conn, payload_size, repeat, nodes, k, workers)
+        if files is not None:
+            #print(files)
+            times_ms = ops_ida.test_set_files(
+                conn, files, repeat, nodes, k, workers)
+            payload_size = sum([os.path.getsize(f) for f in files])
+        else:
+            times_ms = ops_ida.test_set(
+                conn, payload_size, repeat, nodes, k, workers)
         
-        total_time = sum([x["total_time"] for x in times_ms])
-        avg_total_time = total_time / len(times_ms) 
-        avg_metadata_time = sum([x["metadata_time"] for x in times_ms]) / len(times_ms) 
-        avg_data_upload_time = sum([x["data_upload_time"] for x in times_ms]) / len(times_ms) 
+        if len(times_ms) > 0:
+            total_time = sum([x["total_time"] for x in times_ms])
+            #print("entro", total_time, len(times_ms))
+            avg_total_time = total_time / len(times_ms)
+            #avg_metadata_time = sum([x["metadata_time"]
+            #                        for x in times_ms]) / len(times_ms)
+            #avg_data_upload_time = sum([x["data_upload_time"]
+            #                           for x in times_ms]) / len(times_ms)
+            payload_mb = payload_size / 1e6
+            throughput = payload_mb / avg_total_time
+            throughput_upload = payload_mb / (total_time / 1000)
+
+            return RunStats(
+                backend='CDN',
+                op=op,
+                payload_size_bytes=payload_size if op in ('GET', 'SET') else None,
+                clients=clients,
+                repeat=repeat,
+                n=nodes,
+                k=k,
+                workers=workers,
+                total_time_ms=total_time,
+                avg_time_ms=avg_total_time,
+                min_time_ms=min([x["total_time"] for x in times_ms]),
+                max_time_ms=max([x["total_time"] for x in times_ms]),
+                stdev_time_ms=(
+                    statistics.stdev([x["total_time"] for x in times_ms]) if len(
+                        times_ms) > 1 else 0.0
+                ),
+                throughput=throughput,
+                metadata_time=total_time,
+                data_upload_time=total_time,
+                throughput_upload=throughput_upload
+            )
+
+    else:
+        raise AssertionError(f'Unsupported operation {op}')
+
+    if len(times_ms) > 0:
+        avg_time_s = sum(times_ms) / 1000 / len(times_ms)
         payload_mb = payload_size / 1e6
-        throughput = payload_mb / avg_total_time
-        throughput_upload = payload_mb / (avg_data_upload_time / 1000)
-        
+        avg_bandwidth_mbps = (
+            payload_mb / avg_time_s if op in ('GET', 'SET') else None
+        )
+
         return RunStats(
             backend='CDN',
             op=op,
@@ -191,49 +237,34 @@ def run_cdn(
             n=nodes,
             k=k,
             workers=workers,
-            total_time_ms=total_time,
-            avg_time_ms=avg_total_time,
-            min_time_ms=min([x["total_time"] for x in times_ms]),
-            max_time_ms=max([x["total_time"] for x in times_ms]),
+            total_time_ms=sum(times_ms),
+            avg_time_ms=sum(times_ms) / len(times_ms),
+            min_time_ms=min(times_ms),
+            max_time_ms=max(times_ms),
             stdev_time_ms=(
-                statistics.stdev([x["total_time"] for x in times_ms]) if len(times_ms) > 1 else 0.0
+                statistics.stdev(times_ms) if len(times_ms) > 1 else 0.0
             ),
-            throughput=throughput,
-            metadata_time=avg_metadata_time,
-            data_upload_time=avg_data_upload_time,
-            throughput_upload=throughput_upload
+            avg_bandwidth_mbps=avg_bandwidth_mbps,
         )
-        
-    else:
-        raise AssertionError(f'Unsupported operation {op}')
-
-
-
-    avg_time_s = sum(times_ms) / 1000 / len(times_ms)
-    payload_mb = payload_size / 1e6
-    avg_bandwidth_mbps = (
-        payload_mb / avg_time_s if op in ('GET', 'SET') else None
-    )
-
-    return RunStats(
-        backend='CDN',
-        op=op,
-        payload_size_bytes=payload_size if op in ('GET', 'SET') else None,
-        clients=clients,
-        repeat=repeat,
-        n=nodes,
-        k=k,
-        workers=workers,
-        total_time_ms=sum(times_ms),
-        avg_time_ms=sum(times_ms) / len(times_ms),
-        min_time_ms=min(times_ms),
-        max_time_ms=max(times_ms),
-        stdev_time_ms=(
-            statistics.stdev(times_ms) if len(times_ms) > 1 else 0.0
-        ),
-        avg_bandwidth_mbps=avg_bandwidth_mbps,
-    )
-
+    else: 
+        return RunStats(
+            backend='CDN',
+            op=op,
+            payload_size_bytes=payload_size if op in ('GET', 'SET') else None,
+            clients=clients,
+            repeat=repeat,
+            n=nodes,
+            k=k,
+            workers=workers,
+            total_time_ms=0,
+            avg_time_ms=0,
+            min_time_ms=100000000000000,
+            max_time_ms=0,
+            stdev_time_ms=(
+                statistics.stdev(times_ms) if len(times_ms) > 1 else 0.0
+            ),
+            avg_bandwidth_mbps=0,
+        )
 
 async def runner_endpoint(
     remote_endpoint: uuid.UUID | None,
@@ -283,6 +314,33 @@ async def runner_endpoint(
         csv_logger.close()
         logger.log(TESTING_LOG_LEVEL, f'results logged to {csv_file}')
 
+
+def two_choices(files, workers):
+    utilization = [0 for _ in range(workers)]
+    distribution = [[] for _ in range(workers)]
+    for f in files:
+        print(f)
+        # random 1
+        r1 = random.randint(0, workers-1)
+
+        # random 2
+        r2 = random.randint(0, workers-1)
+
+        while r1 == r2:
+            r2 = random.randint(0, workers-1)
+
+        if utilization[r1] < utilization[r2]:
+            # get file size
+            file_size = os.path.getsize(f)
+            utilization[r1] += file_size
+            distribution[r1].append(f)
+        else:
+            file_size = os.path.getsize(f)
+            utilization[r2] += file_size
+            distribution[r2].append(f)
+    return distribution
+
+
 def runner_cdn_concurrent(
     cdn_address: str,
     usertoken: str,
@@ -293,7 +351,8 @@ def runner_cdn_concurrent(
     clients: int,
     chunks: int,
     repeat: int,
-    csv_file: str | None = None
+    csv_file: str | None = None,
+    files: str | None = None
 ) -> None:
     """Run matrix of test test configurations with a CDN server.
 
@@ -306,73 +365,109 @@ def runner_cdn_concurrent(
         repeat (int): number of times to repeat operations.
         csv_file (str): optional csv filepath to log results to.
     """
-    
+
     if csv_file is not None:
         csv_logger = CSVLogger(csv_file, RunStats)
-        
+
     for op in ops:
-        for i, payload_size in enumerate(payload_sizes):
+        if files is not None:
+            # read files in input dir
+            result = [os.path.join(dp, f) for dp, dn, filenames in os.walk(
+                files) for f in filenames]
+            # result = two_choices(result, chunks) if clients > 1 else [result]
+            # for r in result:
             for c in clients:
-                for n in range(1,chunks+1):
-                    #print(n,chunks)
-                    if n > 1:
-                        for k in range(1,n):
-                            for w in range(1,n+1):
-                                if i == 0 or op in ['GET', 'SET']:
-                                    conn = CDNConnector(catalog=catalog, user_token=usertoken, gateway=cdn_address)
-                                    #store = Store('my-store', conn)
-                                    with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
-                                        #print(n)
-                                        futures = [executor.submit(
-                                                run_cdn, 
-                                                conn, 
-                                                op=op, 
-                                                payload_size=payload_size, 
-                                                repeat=repeat, 
+                #print(result)
+                lists = two_choices(result, c) if c > 1 else [result]
+                conn = CDNConnector(
+                    catalog=catalog, user_token=usertoken, gateway=cdn_address)
+                with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
+                    # print(n)
+                    futures = [executor.submit(
+                        run_cdn,
+                        conn,
+                        op=op,
+                        files=lists[x],
+                        repeat=repeat,
+                        clients=c
+                    ) for x in range(c)]
+                    # Wait for all futures to complete
+                    concurrent.futures.wait(futures)
+
+                    run_stats = futures[0] if c == 1 else max(
+                        futures, key=lambda x: x.result().max_time_ms)
+                    # max_object = max(futures, key=lambda x: x.result().max_time_ms)
+
+                    logger.log(TESTING_LOG_LEVEL, run_stats.result())
+                    if csv_file is not None:
+                        csv_logger.log(run_stats.result())
+
+        else:
+            for i, payload_size in enumerate(payload_sizes):
+                for c in clients:
+                    for n in range(1, chunks+1):
+                        # print(n,chunks)
+                        if n > 1:
+                            for k in range(1, n):
+                                for w in range(1, n+1):
+                                    if i == 0 or op in ['GET', 'SET']:
+                                        conn = CDNConnector(
+                                            catalog=catalog, user_token=usertoken, gateway=cdn_address)
+                                        # store = Store('my-store', conn)
+                                        with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
+                                            # print(n)
+                                            futures = [executor.submit(
+                                                run_cdn,
+                                                conn,
+                                                op=op,
+                                                payload_size=payload_size,
+                                                repeat=repeat,
                                                 clients=c,
                                                 nodes=n,
                                                 k=k,
                                                 workers=w
                                             ) for _ in range(c)]
-                                        # Wait for all futures to complete
-                                        concurrent.futures.wait(futures)
+                                            # Wait for all futures to complete
+                                            concurrent.futures.wait(futures)
 
-                                        run_stats = futures[0] if c == 1 else max(futures, key=lambda x: x.result().max_time_ms)
-                                        #max_object = max(futures, key=lambda x: x.result().max_time_ms)
-                                        
-                                        logger.log(TESTING_LOG_LEVEL, run_stats.result())
-                                        if csv_file is not None:
-                                            csv_logger.log(run_stats.result())
-                    else:
-                        if i == 0 or op in ['GET', 'SET']:
-                            conn = CDNConnector(catalog=catalog, user_token=usertoken, gateway=cdn_address)
-                            #store = Store('my-store', conn)
-                            with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
-                                futures = [executor.submit(
-                                        run_cdn, 
-                                        conn, 
-                                        op=op, 
-                                        payload_size=payload_size, 
-                                        repeat=repeat, 
+                                            run_stats = futures[0] if c == 1 else max(
+                                                futures, key=lambda x: x.result().max_time_ms)
+                                            # max_object = max(futures, key=lambda x: x.result().max_time_ms)
+
+                                            logger.log(
+                                                TESTING_LOG_LEVEL, run_stats.result())
+                                            if csv_file is not None:
+                                                csv_logger.log(
+                                                    run_stats.result())
+                        else:
+                            if i == 0 or op in ['GET', 'SET']:
+                                conn = CDNConnector(
+                                    catalog=catalog, user_token=usertoken, gateway=cdn_address)
+                                # store = Store('my-store', conn)
+                                with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
+                                    futures = [executor.submit(
+                                        run_cdn,
+                                        conn,
+                                        op=op,
+                                        payload_size=payload_size,
+                                        repeat=repeat,
                                         clients=c
                                     ) for _ in range(c)]
-                                # Wait for all futures to complete
-                                concurrent.futures.wait(futures)
+                                    # Wait for all futures to complete
+                                    concurrent.futures.wait(futures)
 
-                                run_stats = futures[0] if c == 1 else max(futures, key=lambda x: x.result().max_time_ms)
-                                #max_object = max(futures, key=lambda x: x.result().max_time_ms)
-                                
-                                logger.log(TESTING_LOG_LEVEL, run_stats.result())
-                                if csv_file is not None:
-                                    csv_logger.log(run_stats.result())
+                                    run_stats = futures[0] if c == 1 else max(
+                                        futures, key=lambda x: x.result().max_time_ms)
+                                    # max_object = max(futures, key=lambda x: x.result().max_time_ms)
+
+                                    logger.log(TESTING_LOG_LEVEL,
+                                               run_stats.result())
+                                    if csv_file is not None:
+                                        csv_logger.log(run_stats.result())
 
     if csv_file is not None:
         csv_logger.close()
         logger.log(TESTING_LOG_LEVEL, f'results logged to {csv_file}')
-                        
-                        
-                
-                
 
 
 def runner_cdn(
@@ -399,7 +494,8 @@ def runner_cdn(
     if csv_file is not None:
         csv_logger = CSVLogger(csv_file, RunStats)
 
-    conn = CDNConnector(catalog=catalog, user_token=usertoken, gateway=cdn_address)
+    conn = CDNConnector(
+        catalog=catalog, user_token=usertoken, gateway=cdn_address)
     store = Store('my-store', conn)
     for op in ops:
         for i, payload_size in enumerate(payload_sizes):
@@ -474,6 +570,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='Endpoint operations to measure',
     )
     parser.add_argument(
+        '--files',
+        type=str,
+        default=None,
+        help='Path to the files',
+    )
+    parser.add_argument(
         '--payload-sizes',
         type=int,
         nargs='+',
@@ -508,7 +610,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     init_logging(args.log_file, args.log_level, force=True)
 
- 
     if args.backend == 'ENDPOINT':
         if not args.no_uvloop:
             try:
@@ -534,16 +635,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     elif args.backend == 'CDN':
         print(args.chunks)
         runner_cdn_concurrent(
-                args.cdn,
-                args.cdn_usertoken,
-                args.cdn_catalog,
-                args.ops,
-                payload_sizes=args.payload_sizes,
-                clients=args.clients,
-                chunks=args.chunks,
-                repeat=args.repeat,
-                csv_file=args.csv_file
-            )
+            args.cdn,
+            args.cdn_usertoken,
+            args.cdn_catalog,
+            args.ops,
+            payload_sizes=args.payload_sizes,
+            clients=args.clients,
+            chunks=args.chunks,
+            repeat=args.repeat,
+            csv_file=args.csv_file,
+            files=args.files
+        )
         # if args.clients > 1:
         #     runner_cdn_concurrent(
         #         args.cdn,
@@ -569,6 +671,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise AssertionError('Unreachable.')
 
     return 0
+
 
 if __name__ == '__main__':
     main()

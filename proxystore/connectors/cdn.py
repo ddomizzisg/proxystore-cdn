@@ -205,7 +205,7 @@ class CDNConnector:
                 f'Put failed with error code {str(e)}.',
             ) from e
 
-        return object_id #, time_metrics
+        return object_id, time_metrics
 
     def put_batch(self, objs: Sequence[bytes] = None, files: Sequence[CDNKey] = None) -> list[str]:
         """Put a batch of serialized objects in the store.

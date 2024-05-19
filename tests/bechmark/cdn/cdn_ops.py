@@ -26,6 +26,27 @@ def test_set(
     metric_times["total_time"] = times_ms
     return metric_times
 
+def test_set_files(
+    store: Store,
+    files: str,
+    repeat: int = 1,
+) -> list[float]:
+    times_ms: list[float] = []
+
+    for f in range(files):
+        data = open(f, "rb").read()
+        start = time.perf_counter_ns()
+        key, metric_times = store.put(data)
+        end = time.perf_counter_ns()
+        times_ms.append((end - start) / 1e6)
+
+        # Evict key immediately to keep memory usage low
+        del data
+        store.evict(key)
+    metric_times["total_time"] = times_ms
+    return metric_times
+
+
 def test_get(
     store: Store,
     payload_size_bytes: int,

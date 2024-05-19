@@ -129,7 +129,7 @@ class Client(object):
         required_chunks: int = 1,
         max_workers: int = 1,
     ) -> None:
-        
+        start_time = time.perf_counter_ns()
         data_hash = hashlib.sha3_256(data).hexdigest()
         name = data_hash if name is None else name
 
@@ -174,13 +174,15 @@ class Client(object):
         response       = requests.put(f'http://{self.metadata_server}/storage/{token_user}/{catalog}/{key}', files=files)
 
         if response.status_code == 201:
-            pass
+            print(response.text)
         else:
             raise requests.exceptions.RequestException(
                 f'Metadata server returned HTTP error code {response.status_code}. '
                 f'{response.text}',
                 response=response,
             )
+        end = time.perf_counter_ns()
+        return {"total_time": (end - start_time) / 1e6}
 
     def put_chunks(
         self,
