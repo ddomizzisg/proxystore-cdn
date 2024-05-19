@@ -319,7 +319,7 @@ def two_choices(files, workers):
     utilization = [0 for _ in range(workers)]
     distribution = [[] for _ in range(workers)]
     for f in files:
-        print(f)
+        #print(f)
         # random 1
         r1 = random.randint(0, workers-1)
 
