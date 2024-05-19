@@ -70,21 +70,24 @@ def test_set_files(
     disperse = "IDA" if number_of_chunks > 1 else "SINGLE"
 
     for i,f in enumerate(files):
-        data = open(f, "rb").read()
-        start = time.perf_counter_ns()
-        key,time_metrics = connector.put(
-                data, 
-                number_of_chunks=number_of_chunks, 
-                required_chunks=required_chunks, 
-                workers=workers
-            )
-        #print(time_metrics)
-        end = time.perf_counter_ns()
-        time_metrics["total_time"] = (end - start) / 1e6
-        times_ms.append(time_metrics)
+        try:
+            data = open(f, "rb").read()
+            start = time.perf_counter_ns()
+            key,time_metrics = connector.put(
+                    data, 
+                    number_of_chunks=number_of_chunks, 
+                    required_chunks=required_chunks, 
+                    workers=workers
+                )
+            #print(time_metrics)
+            end = time.perf_counter_ns()
+            time_metrics["total_time"] = (end - start) / 1e6
+            times_ms.append(time_metrics)
 
-        # Evict key immediately to keep memory usage low
-        #del data
-        #connector.evict(key)
+            # Evict key immediately to keep memory usage low
+            #del data
+            #connector.evict(key)
+        except Exception as e:
+            print(f"Error: {e}")
 
     return times_ms
