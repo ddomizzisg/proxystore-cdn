@@ -352,7 +352,8 @@ def runner_cdn_concurrent(
     chunks: int,
     repeat: int,
     csv_file: str | None = None,
-    files: str | None = None
+    files: str | None = None, 
+    parallel: bool = True
 ) -> None:
     """Run matrix of test test configurations with a CDN server.
 
@@ -378,7 +379,10 @@ def runner_cdn_concurrent(
             # for r in result:
             for c in clients:
                 #print(result)
-                lists = two_choices(result, c) if c > 1 else [result]
+                if parallel:
+                    lists = two_choices(result, c) if c > 1 else [result]
+                else:
+                    lists = [result for _ in range(c)]
                 conn = CDNConnector(
                     catalog=catalog, user_token=usertoken, gateway=cdn_address)
                 with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
@@ -589,6 +593,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=[1],
         help='Number of concurrent clients to run the tests',
     )
+    
+    parser.add_argument(
+        '--parallel',
+        type=bool,
+        default=True,
+        help='Parallel execution'
+    )
+    
     parser.add_argument(
         '--server',
         required='ENDPOINT' in sys.argv,
@@ -644,7 +656,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             chunks=args.chunks,
             repeat=args.repeat,
             csv_file=args.csv_file,
-            files=args.files
+            files=args.files,
+            parallel=args.parallel
         )
         # if args.clients > 1:
         #     runner_cdn_concurrent(
