@@ -174,7 +174,8 @@ class Client(object):
         response       = requests.put(f'http://{self.metadata_server}/storage/{token_user}/{catalog}/{key}', files=files)
 
         if response.status_code == 201:
-            print(response.text)
+            #print(response.text)
+            pass
         else:
             raise requests.exceptions.RequestException(
                 f'Metadata server returned HTTP error code {response.status_code}. '
