@@ -10,6 +10,7 @@ import asyncio
 import logging
 import socket
 import statistics
+import requests
 import sys
 import uuid
 from typing import Any
@@ -171,8 +172,49 @@ def run_cdn(
     elif op == 'EXISTS':
         times_ms = ops_ida.test_exists(conn, repeat)
     elif op == 'GET':
-        times_ms = ops_ida.test_get(
-            conn, payload_size, repeat, nodes, k, workers)
+        if files is not None:
+            times_ms, payload_size = ops_ida.test_get_files(
+                conn, files, repeat
+            )
+        else:
+            times_ms = ops_ida.test_get(
+                conn, payload_size, repeat, nodes, k, workers)
+            
+        if len(times_ms) > 0:
+            total_time = sum([x for x in times_ms])
+            #print("entro", total_time, len(times_ms))
+            avg_total_time = total_time / len(times_ms)
+            #avg_metadata_time = sum([x["metadata_time"]
+            #                        for x in times_ms]) / len(times_ms)
+            #avg_data_upload_time = sum([x["data_upload_time"]
+            #                           for x in times_ms]) / len(times_ms)
+            payload_mb = payload_size / 1e6
+            throughput = payload_mb / avg_total_time
+            throughput_upload = payload_mb / (total_time / 1000)
+
+            return RunStats(
+                backend='CDN',
+                op=op,
+                payload_size_bytes=payload_size if op in ('GET', 'SET') else None,
+                clients=clients,
+                repeat=repeat,
+                n=nodes,
+                k=k,
+                workers=workers,
+                total_time_ms=total_time,
+                avg_time_ms=avg_total_time,
+                min_time_ms=min([x for x in times_ms]),
+                max_time_ms=max([x for x in times_ms]),
+                stdev_time_ms=(
+                    statistics.stdev([x for x in times_ms]) if len(
+                        times_ms) > 1 else 0.0
+                ),
+                throughput=throughput,
+                metadata_time=total_time,
+                data_upload_time=total_time,
+                throughput_upload=throughput_upload
+            )
+        
     elif op == 'SET':
         if files is not None:
             #print(files)
@@ -340,6 +382,11 @@ def two_choices(files, workers):
             distribution[r2].append(f)
     return distribution
 
+def rount_robin(files, workers):
+    distribution = [[] for _ in range(workers)]
+    for i, f in enumerate(files):
+        distribution[i % workers].append(f[0])
+    return distribution
 
 def runner_cdn_concurrent(
     cdn_address: str,
@@ -372,17 +419,54 @@ def runner_cdn_concurrent(
 
     for op in ops:
         if files is not None:
-            # read files in input dir
-            result = [os.path.join(dp, f) for dp, dn, filenames in os.walk(
-                files) for f in filenames]
-            # result = two_choices(result, chunks) if clients > 1 else [result]
-            # for r in result:
-            for c in clients:
-                #print(result)
-                if parallel:
-                    lists = two_choices(result, c) if c > 1 else [result]
-                else:
-                    lists = [result for _ in range(c)]
+            if op == 'SET':
+                # read files in input dir
+                result = [os.path.join(dp, f) for dp, dn, filenames in os.walk(
+                    files) for f in filenames]
+                # result = two_choices(result, chunks) if clients > 1 else [result]
+                # for r in result:
+                for c in clients:
+                    #print(result)
+                    if parallel:
+                        lists = two_choices(result, c) if c > 1 else [result]
+                    else:
+                        lists = [result for _ in range(c)]
+                    conn = CDNConnector(
+                        catalog=catalog, user_token=usertoken, gateway=cdn_address)
+                    with concurrent.futures.ProcessPoolExecutor(max_workers=c) as executor:
+                        # print(n)
+                        futures = [executor.submit(
+                            run_cdn,
+                            conn,
+                            op=op,
+                            files=lists[x],
+                            repeat=repeat,
+                            clients=c
+                        ) for x in range(c)]
+                        # Wait for all futures to complete
+                        concurrent.futures.wait(futures)
+
+                        run_stats = futures[0] if c == 1 else max(
+                            futures, key=lambda x: x.result().max_time_ms)
+                        # max_object = max(futures, key=lambda x: x.result().max_time_ms)
+
+                        logger.log(TESTING_LOG_LEVEL, run_stats.result())
+                        if csv_file is not None:
+                            csv_logger.log(run_stats.result())
+                    
+            elif op == 'GET':
+                # Get files from the catalog
+                url = f'http://{cdn_address}/pubsub/{usertoken}/catalog/{catalog}/list'
+                response = requests.get(url)
+                files = response.json()
+                files = files['data']
+                #print(files)
+                for c in clients:
+                    if parallel:
+                        lists = rount_robin(files, c) if c > 1 else [files]
+                    else:
+                        lists = [result for _ in range(c)]
+
                 conn = CDNConnector(
                     catalog=catalog, user_token=usertoken, gateway=cdn_address)
                 with concurrent.futures.ProcessPoolExecutor(max_workers=c) as executor:
@@ -404,8 +488,10 @@ def runner_cdn_concurrent(
 
                     logger.log(TESTING_LOG_LEVEL, run_stats.result())
                     if csv_file is not None:
-                        csv_logger.log(run_stats.result())
-
+                        csv_logger.log(run_stats.result())                
+        
+                
+                    
         else:
             for i, payload_size in enumerate(payload_sizes):
                 for c in clients:

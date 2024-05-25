@@ -84,7 +84,7 @@ class Client(object):
             data = bytearray()
             for chunk in response.iter_content(chunk_size=None):
                 data += chunk
-            print(data)
+            #print(data)
             return bytes(data)
     
             #data = response.json["data"]

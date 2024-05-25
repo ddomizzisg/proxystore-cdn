@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from proxystore.connectors.cdn import CDNConnector
 from utils import randbytes
+from proxystore.connectors.cdn import CDNKey
 
 import time
 
@@ -56,6 +57,31 @@ def test_get(
     connector.evict(key)
     
     return times_ms
+
+def test_get_files(
+    connector: CDNConnector,
+    files: list[str],
+    repeat: int = 1
+) -> list[float]:
+    times_ms: list[float] = []
+    payload = 0
+    for i,f in enumerate(files):
+        #print(f"Processing file {f}")
+        try:
+            for i in range(repeat):
+                start = time.perf_counter_ns()
+                key = CDNKey(cdn_key=str(f))
+                data_ = connector.get(key)
+                payload += len(data_)
+                end = time.perf_counter_ns()
+                times_ms.append((end - start) / 1e6)
+                del data_
+            # Evict key immediately to keep memory usage low
+            connector.evict(key)
+        except Exception as e:
+            print(f"Error: {e}")
+
+    return times_ms, payload
 
 def test_set_files(
     connector: CDNConnector,
