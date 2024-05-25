@@ -385,7 +385,7 @@ def runner_cdn_concurrent(
                     lists = [result for _ in range(c)]
                 conn = CDNConnector(
                     catalog=catalog, user_token=usertoken, gateway=cdn_address)
-                with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
+                with concurrent.futures.ProcessPoolExecutor(max_workers=c) as executor:
                     # print(n)
                     futures = [executor.submit(
                         run_cdn,
@@ -418,7 +418,7 @@ def runner_cdn_concurrent(
                                         conn = CDNConnector(
                                             catalog=catalog, user_token=usertoken, gateway=cdn_address)
                                         # store = Store('my-store', conn)
-                                        with concurrent.futures.ThreadPoolExecutor(max_workers=c) as executor:
+                                        with concurrent.futures.ProcessPoolExecutor(max_workers=c) as executor:
                                             # print(n)
                                             futures = [executor.submit(
                                                 run_cdn,
