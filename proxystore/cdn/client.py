@@ -67,7 +67,7 @@ class Client(object):
             f'http://{self.metadata_server}/storage/{token_user}/{key}'
         )
         
-        print(response.text)
+        #print(response.text)
         
         if response.status_code == 404:
             raise requests.exceptions.RequestException(
