@@ -71,13 +71,14 @@ def test_get_files(
             for i in range(repeat):
                 start = time.perf_counter_ns()
                 key = CDNKey(cdn_key=str(f))
+                print(key)
                 data_ = connector.get(key)
                 payload += len(data_)
                 end = time.perf_counter_ns()
                 times_ms.append((end - start) / 1e6)
                 del data_
             # Evict key immediately to keep memory usage low
-            connector.evict(key)
+            #connector.evict(key)
         except Exception as e:
             print(f"Error: {e}")
 
