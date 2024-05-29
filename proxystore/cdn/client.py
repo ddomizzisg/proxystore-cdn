@@ -62,7 +62,7 @@ class Client(object):
         session: requests.Session | None = None
     ) -> bytes | None:
         get = requests.get if session is None else session.get
-        print(key, type(key), sep=" - ")
+        #print(key, type(key), sep=" - ")
         response = get(
             f'http://{self.metadata_server}/storage/{token_user}/{key}'
         )
