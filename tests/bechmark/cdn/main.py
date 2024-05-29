@@ -20,6 +20,7 @@ from typing import Sequence
 import concurrent.futures
 import os
 import random
+import json
 
 from proxystore.endpoint.endpoint import Endpoint
 
@@ -218,6 +219,7 @@ def run_cdn(
     elif op == 'SET':
         if files is not None:
             #print(files)
+            #print(conn)
             times_ms = ops_ida.test_set_files(
                 conn, files, repeat, nodes, k, workers)
             payload_size = sum([os.path.getsize(f) for f in files])
@@ -458,9 +460,13 @@ def runner_cdn_concurrent(
                 # Get files from the catalog
                 url = f'http://{cdn_address}/pubsub/{usertoken}/catalog/{catalog}/list'
                 response = requests.get(url)
+                #print(response.headers['Content-Type'])
+                #print(response.encoding)
+                #print(response.text)
                 files = response.json()
-                files = files['data']
                 #print(files)
+                files = [f["token_file"] for f in files['data']]
+                #print(files[0]["token_file"])
                 for c in clients:
                     if parallel:
                         lists = rount_robin(files, c) if c > 1 else [files]
@@ -731,7 +737,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
         )
     elif args.backend == 'CDN':
-        print(args.chunks)
+        #print(args.chunks)
         runner_cdn_concurrent(
             args.cdn,
             args.cdn_usertoken,
