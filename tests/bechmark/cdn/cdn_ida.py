@@ -91,7 +91,8 @@ def test_set_files(
     repeat: int = 1,
     number_of_chunks: int = 1,
     required_chunks: int = 1,
-    workers: int = 1
+    workers: int = 1,
+    resiliency: int = 1
 ) -> list[float]:
     times_ms: list[float] = []
     
@@ -103,9 +104,7 @@ def test_set_files(
             start = time.perf_counter_ns()
             key,time_metrics = connector.put(
                     data, 
-                    number_of_chunks=number_of_chunks, 
-                    required_chunks=required_chunks, 
-                    workers=workers
+                    workers=workers, resiliency=resiliency
                 )
             #print(time_metrics)
             end = time.perf_counter_ns()

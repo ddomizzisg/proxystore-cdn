@@ -150,7 +150,8 @@ def run_cdn(
     nodes: int = 1,
     k: int = 1,
     workers: int = 1,
-    files = None
+    files = None,
+    resiliency: int = 0
 ) -> RunStats:
     """Run test for single operation and measure performance.
 
@@ -221,7 +222,7 @@ def run_cdn(
             #print(files)
             #print(conn)
             times_ms = ops_ida.test_set_files(
-                conn, files, repeat, nodes, k, workers)
+                conn, files, repeat, nodes, k, workers, resiliency)
             payload_size = sum([os.path.getsize(f) for f in files])
         else:
             times_ms = ops_ida.test_set(
@@ -399,6 +400,7 @@ def runner_cdn_concurrent(
     payload_sizes: list[int],
     clients: int,
     chunks: int,
+    resiliency: int,
     repeat: int,
     csv_file: str | None = None,
     files: str | None = None, 
@@ -443,7 +445,8 @@ def runner_cdn_concurrent(
                             op=op,
                             files=lists[x],
                             repeat=repeat,
-                            clients=c
+                            clients=c, 
+                            resiliency=resiliency
                         ) for x in range(c)]
                         # Wait for all futures to complete
                         concurrent.futures.wait(futures)
@@ -694,6 +697,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     
     parser.add_argument(
+        '--resiliency',
+        type=int,
+        default=0,
+        help='Activate resilence in the system'
+    )
+    
+    parser.add_argument(
         '--server',
         required='ENDPOINT' in sys.argv,
         help='Relay server address for connecting to the remote endpoint',
@@ -749,7 +759,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             repeat=args.repeat,
             csv_file=args.csv_file,
             files=args.files,
-            parallel=args.parallel
+            parallel=args.parallel,
+            resiliency=args.resiliency
         )
         # if args.clients > 1:
         #     runner_cdn_concurrent(

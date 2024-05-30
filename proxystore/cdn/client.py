@@ -126,48 +126,18 @@ class Client(object):
         name: str = None,
         session: requests.Session | None = None,
         is_encrypted: bool = False,
-        chunks: int = 1,
-        required_chunks: int = 1,
         max_workers: int = 1,
+        resiliency: int = 0
     ) -> None:
         start_time = time.perf_counter_ns()
         data_hash = hashlib.sha3_256(data).hexdigest()
         name = data_hash if name is None else name
 
-        
-        # if chunks > 1:
-        #     disperse = "IDA"
-        #     return put_chunks(**locals())
-        # else:
-        #     put = requests.put if session is None else session.put
-        #     fake_file = io.BytesIO(data)
-            
-        #     payload = {"name": name, "size": len(data), "hash": data_hash, "key": key,
-        #                  "is_encrypted": int(is_encrypted), "chunks": chunks,
-        #                  "required_chunks": required_chunks}
-        #     files   = [
-        #                 ('json', ('payload.json', json.dumps(payload), 'application/json')),
-        #                 ('data', ('data.bin', fake_file, 'application/octet-stream'))
-        #             ]
-        #     response       = requests.put(f'http://{self.metadata_server}/storage/{token_user}/{catalog}/{key}', files=files)
-
-        #     if response.status_code == 201:
-        #         pass
-        #     else:
-        #         raise requests.exceptions.RequestException(
-        #             f'Metadata server returned HTTP error code {response.status_code}. '
-        #             f'{response.text}',
-        #             response=response,
-        #         )
-        
-        #return data_upload_time
-        
         put = requests.put if session is None else session.put
         fake_file = io.BytesIO(data)
         
         payload = {"name": name, "size": len(data), "hash": data_hash, "key": key,
-                        "is_encrypted": int(is_encrypted), "chunks": chunks,
-                        "required_chunks": required_chunks}
+                        "is_encrypted": int(is_encrypted), "resiliency": resiliency}
         files   = [
                     ('json', ('payload.json', json.dumps(payload), 'application/json')),
                     ('data', ('data.bin', fake_file, 'application/octet-stream'))

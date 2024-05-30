@@ -11,8 +11,8 @@ import math
 connector = CDNConnector(catalog="proxystore")
 data = b'Hello World'
 
-#key = connector.put(data, number_of_chunks=5, required_chunks=3)
-key, time = connector.put(data)
+key,time = connector.put(data, resiliency=1)
+#key, time = connector.put(data)
 print(key)
 print(connector.get(key))
 #print(connector.exists(key))
