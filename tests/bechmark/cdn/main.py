@@ -218,6 +218,7 @@ def run_cdn(
             )
         
     elif op == 'SET':
+        print("SEEEET", files)
         if files is not None:
             #print(files)
             #print(conn)
@@ -227,7 +228,7 @@ def run_cdn(
         else:
             times_ms = ops_ida.test_set(
                 conn, payload_size, repeat, nodes, k, workers)
-        
+        print(times_ms)
         if len(times_ms) > 0:
             total_time = sum([x["total_time"] for x in times_ms])
             #print("entro", total_time, len(times_ms))
@@ -404,7 +405,7 @@ def runner_cdn_concurrent(
     repeat: int,
     csv_file: str | None = None,
     files: str | None = None, 
-    parallel: bool = True
+    parallel: int = 1
 ) -> None:
     """Run matrix of test test configurations with a CDN server.
 
@@ -431,7 +432,8 @@ def runner_cdn_concurrent(
                 # for r in result:
                 for c in clients:
                     #print(result)
-                    if parallel:
+                    print(parallel)
+                    if parallel == 1:
                         lists = two_choices(result, c) if c > 1 else [result]
                     else:
                         lists = [result for _ in range(c)]
@@ -691,8 +693,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     
     parser.add_argument(
         '--parallel',
-        type=bool,
-        default=True,
+        type=int,
+        default=1,
         help='Parallel execution'
     )
     
@@ -748,6 +750,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     elif args.backend == 'CDN':
         #print(args.chunks)
+        print(args)
         runner_cdn_concurrent(
             args.cdn,
             args.cdn_usertoken,
