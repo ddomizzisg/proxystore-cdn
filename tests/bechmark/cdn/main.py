@@ -476,7 +476,7 @@ def runner_cdn_concurrent(
                     if parallel:
                         lists = rount_robin(files, c) if c > 1 else [files]
                     else:
-                        lists = [result for _ in range(c)]
+                        lists = [r for r in files]
 
                 conn = CDNConnector(
                     catalog=catalog, user_token=usertoken, gateway=cdn_address)

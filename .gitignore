@@ -139,3 +139,4 @@ tests/bechmark/cdn/pruebas.ods
 tests/bechmark/cdn/.~lock.HOLA.csv\#
 *.ods
 *.csv
+tests/bechmark/cdn/individual_conc_aws.cs
