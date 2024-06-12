@@ -69,7 +69,8 @@ def test_get_files(
     for i,f in enumerate(files):
         #print(f"Processing file {f}")
         #try:
-        for i in range(repeat):
+        for j in range(repeat):
+            
             start = time.perf_counter_ns()
             key = CDNKey(cdn_key=str(f))
             #print(key)
