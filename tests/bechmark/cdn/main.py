@@ -183,6 +183,7 @@ def run_cdn(
                 conn, payload_size, repeat, nodes, k, workers)
             
         if len(times_ms) > 0:
+            print(times_ms)
             total_time = sum([x for x in times_ms])
             #print("entro", total_time, len(times_ms))
             avg_total_time = total_time / len(times_ms)
