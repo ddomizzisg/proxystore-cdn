@@ -102,19 +102,20 @@ def test_set_files(
     for i,f in enumerate(files):
         try:
             data = open(f, "rb").read()
-            start = time.perf_counter_ns()
-            key,time_metrics = connector.put(
-                    data, 
-                    workers=workers, resiliency=resiliency
-                )
-            #print(time_metrics)
-            end = time.perf_counter_ns()
-            time_metrics["total_time"] = (end - start) / 1e6
-            times_ms.append(time_metrics)
+            for j in range(repeat):
+                start = time.perf_counter_ns()
+                key,time_metrics = connector.put(
+                        data, 
+                        workers=workers, resiliency=resiliency
+                    )
+                #print(time_metrics)
+                end = time.perf_counter_ns()
+                time_metrics["total_time"] = (end - start) / 1e6
+                times_ms.append(time_metrics)
 
-            # Evict key immediately to keep memory usage low
-            #del data
-            #connector.evict(key)
+                # Evict key immediately to keep memory usage low
+                #del data
+                #connector.evict(key)
         except Exception as e:
             #print(f"Error: {e}")
             pass
