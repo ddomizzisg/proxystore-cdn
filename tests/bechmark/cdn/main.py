@@ -234,10 +234,10 @@ def run_cdn(
             total_time = sum([x["total_time"] for x in times_ms])
             #print("entro", total_time, len(times_ms))
             avg_total_time = total_time / len(times_ms)
-            #avg_metadata_time = sum([x["metadata_time"]
-            #                        for x in times_ms]) / len(times_ms)
-            #avg_data_upload_time = sum([x["data_upload_time"]
-            #                           for x in times_ms]) / len(times_ms)
+            avg_metadata_time = sum([x["metadata_time"]
+                                    for x in times_ms]) / len(times_ms)
+            avg_data_upload_time = sum([x["upload_time"]
+                                       for x in times_ms]) / len(times_ms)
             payload_mb = payload_size / 1e6
             throughput = payload_mb / avg_total_time
             throughput_upload = payload_mb / (total_time / 1000)
@@ -260,8 +260,8 @@ def run_cdn(
                         times_ms) > 1 else 0.0
                 ),
                 throughput=throughput,
-                metadata_time=total_time,
-                data_upload_time=total_time,
+                metadata_time=avg_metadata_time,
+                data_upload_time=avg_data_upload_time,
                 throughput_upload=throughput_upload
             )
 
