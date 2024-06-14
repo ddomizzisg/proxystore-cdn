@@ -1,1 +1,0 @@
-backend,op,payload_size_bytes,repeat,total_time_ms,avg_time_ms,min_time_ms,clients,workers,n,k,max_time_ms,stdev_time_ms,metadata_time,data_upload_time,throughput,throughput_upload
