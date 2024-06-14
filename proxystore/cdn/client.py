@@ -145,8 +145,7 @@ class Client(object):
         response       = requests.put(f'http://{self.metadata_server}/storage/{token_user}/{catalog}/{key}', files=files)
 
         if response.status_code == 201:
-            print(response.text)
-            pass
+            res = response.json()
         else:
             raise requests.exceptions.RequestException(
                 f'Metadata server returned HTTP error code {response.status_code}. '
@@ -154,7 +153,7 @@ class Client(object):
                 response=response,
             )
         end = time.perf_counter_ns()
-        return {"total_time": (end - start_time) / 1e6}
+        return {"total_time": (end - start_time) / 1e6, "upload_time": res["total_time"] / 1e6, "metadata_time": res["time_upload"] / 1e6}
 
     def put_chunks(
         self,
