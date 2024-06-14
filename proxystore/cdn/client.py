@@ -153,7 +153,7 @@ class Client(object):
                 response=response,
             )
         end = time.perf_counter_ns()
-        return {"total_time": (end - start_time) / 1e6, "upload_time": res["total_time"] / 1e6, "metadata_time": res["time_upload"] / 1e6}
+        return {"total_time": (end - start_time) / 1e6, "metadata_time": res["total_time"] / 1e6, "upload_time": res["time_upload"] / 1e6}
 
     def put_chunks(
         self,
