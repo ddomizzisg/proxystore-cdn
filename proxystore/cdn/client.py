@@ -20,7 +20,7 @@ class Client(object):
         self,
         key: str,
         token_user: str = None,
-        session: requests.Session | None = None
+        session: requests.Session = None
     ) -> None:
         delete_ = requests.delete if session is None else session.delete
         response = delete_(
@@ -38,7 +38,7 @@ class Client(object):
         self,
         key: str,
         token_user: str = None,
-        session: requests.Session | None = None
+        session: requests.Session = None
     ) -> bool:
         
         get_ = requests.get if session is None else session.get
@@ -59,8 +59,8 @@ class Client(object):
         self,
         key: str,
         token_user: str = None,
-        session: requests.Session | None = None
-    ) -> bytes | None:
+        session: requests.Session = None
+    ) -> bytes:
         get = requests.get if session is None else session.get
         #print(key, type(key), sep=" - ")
         response = get(
@@ -124,7 +124,7 @@ class Client(object):
         catalog: str,
         key: str = str(uuid.uuid4()),
         name: str = None,
-        session: requests.Session | None = None,
+        session: requests.Session = None,
         is_encrypted: bool = False,
         max_workers: int = 1,
         resiliency: int = 0
@@ -163,7 +163,7 @@ class Client(object):
         data: bytes,
         token_user: str,
         catalog: str,
-        session: requests.Session | None = None,
+        session: requests.Session = None,
         is_encrypted: bool = False,
         chunks: int = 1,
         required_chunks: int = 1,
@@ -236,7 +236,7 @@ class Client(object):
         data_hash: str,
         key: str,
         catalog: str,
-        session: requests.Session | None = None,
+        session: requests.Session = None,
         is_encrypted: bool = False,
         chunks: int = 1,
         required_chunks: int = 1,
@@ -259,7 +259,7 @@ class Client(object):
         url: str,
         data: bytes,
         token_user: str,
-        session: requests.Session | None = None,
+        session: requests.Session = None,
     ) -> bool:
         
         post = requests.post if session is None else session.post
