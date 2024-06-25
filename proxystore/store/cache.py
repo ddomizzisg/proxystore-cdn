@@ -37,6 +37,7 @@ class LRUCache(Generic[KeyT, ValueT]):
 
     def exists(self, key: KeyT) -> bool:
         """Check if key is in cache."""
+        
         return key in self.data
 
     def get(self, key: KeyT, default: ValueT | None = None) -> ValueT | None:

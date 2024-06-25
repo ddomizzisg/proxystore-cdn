@@ -35,6 +35,7 @@ def dicom2png(dicom, path):
     import pydicom
     import numpy as np
     import os
+    import sys
 
     
     # Get the pixel array from the DICOM file
@@ -142,10 +143,10 @@ if __name__ == '__main__':
         images = glob.glob(f'{path}/*.dcm')
         futures = []
         for img in images:
-            print(img)
             dicom = pydicom.dcmread(img)
             if store is not None:
                 dicom = store.proxy(dicom)
+            #print(dicom)
             futures.append(gce.submit(dicom2png, dicom, img))
         
         png_results = [future.result() for future in futures]

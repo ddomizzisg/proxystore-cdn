@@ -8,13 +8,12 @@ import math
 
 # Store the object and get a proxy. The proxy acts
 # like a reference to the object.
-connector = CDNConnector(catalog="proxystore")
+store = Store('cdn', CDNConnector(catalog="proxystore"))
 data = b'Hello World'
 
-key,time = connector.put(data, resiliency=1)
+data = store.proxy(data)
 #key, time = connector.put(data)
-print(key)
-print(connector.get(key))
+print(data)
 #print(connector.exists(key))
 #connector.evict(key)
 #print(connector.exists(key))
