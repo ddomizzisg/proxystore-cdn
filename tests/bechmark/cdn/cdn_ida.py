@@ -103,14 +103,13 @@ def test_set_files(
     for i,f in enumerate(files):
         try:
             data = open(f, "rb").read()
-            print(data)
             for j in range(repeat):
                 start = time.perf_counter_ns()
                 key,time_metrics = connector.put(
                         data, 
                         workers=workers, resiliency=resiliency
                     )
-                print(time_metrics)
+                print("a", key, time_metrics)
                 end = time.perf_counter_ns()
                 time_metrics["total_time"] = (end - start) / 1e6
                 times_ms.append(time_metrics)
