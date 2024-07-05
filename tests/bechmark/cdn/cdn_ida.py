@@ -120,6 +120,6 @@ def test_set_files(
                 #del data
                 #connector.evict(key)
         except Exception as e:
-            #print(f"Error: {e}")
-            pass
+            print(f"Error: {e}")
+            #pass
     return times_ms
