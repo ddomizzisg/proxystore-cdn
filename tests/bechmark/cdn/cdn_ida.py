@@ -99,11 +99,11 @@ def test_set_files(
     times_ms: list[float] = []
     
     disperse = "IDA" if number_of_chunks > 1 else "SINGLE"
-    print("Entro")
+    #print("Entro")
     for i,f in enumerate(files):
         try:
             data = open(f, "rb").read()
-            print(repeat)
+            #print(repeat)
             for j in range(repeat):
                 print("Entro2")
                 start = time.perf_counter_ns()
@@ -111,7 +111,7 @@ def test_set_files(
                         data, 
                         workers=workers, resiliency=resiliency
                     )
-                print("a", key, time_metrics)
+                #print("a", key, time_metrics)
                 end = time.perf_counter_ns()
                 time_metrics["total_time"] = (end - start) / 1e6
                 times_ms.append(time_metrics)
