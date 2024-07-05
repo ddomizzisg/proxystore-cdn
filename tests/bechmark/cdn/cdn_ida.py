@@ -99,10 +99,11 @@ def test_set_files(
     times_ms: list[float] = []
     
     disperse = "IDA" if number_of_chunks > 1 else "SINGLE"
-
+    print("Entro")
     for i,f in enumerate(files):
         try:
             data = open(f, "rb").read()
+            print(data)
             for j in range(repeat):
                 start = time.perf_counter_ns()
                 key,time_metrics = connector.put(
