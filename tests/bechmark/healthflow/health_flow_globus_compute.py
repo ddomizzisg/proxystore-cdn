@@ -130,7 +130,7 @@ if __name__ == '__main__':
         endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
         store = Store('globus', GlobusConnector(endpoints=endpoints))
     elif args.ps_redis:
-        store = Store('redis', RedisConnector('10.118.95.105', args.ps_redis_port))
+        store = Store('redis', RedisConnector('129.114.26.127', args.ps_redis_port))
     elif args.ps_cdn:
         store = Store('cdn', CDNConnector(catalog="proxystore"))
     
@@ -155,7 +155,7 @@ if __name__ == '__main__':
         for png in png_results:
             if store is not None:
                 png = store.proxy(png)
-            print(png)
+            #print(png)
             futures.append(gce.submit(detector, png))
         
         detector_results = [future.result() for future in futures]
@@ -167,6 +167,7 @@ if __name__ == '__main__':
             print('Done')
             #La imagen se guarda en la ruta de salida.
             plt.savefig(os.path.basename(images[i]) + ".png")
+            plt.close()
             #plt.show()
             
                 
