@@ -27,6 +27,7 @@ def test_set(
                 required_chunks=required_chunks, 
                 workers=workers
             )
+        print(key, time_metrics)
         end = time.perf_counter_ns()
         time_metrics["total_time"] = (end - start) / 1e6
         times_ms.append(time_metrics)
