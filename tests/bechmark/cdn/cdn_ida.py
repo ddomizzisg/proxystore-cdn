@@ -109,7 +109,7 @@ def test_set_files(
                         data, 
                         workers=workers, resiliency=resiliency
                     )
-                #print(time_metrics)
+                print(time_metrics)
                 end = time.perf_counter_ns()
                 time_metrics["total_time"] = (end - start) / 1e6
                 times_ms.append(time_metrics)
