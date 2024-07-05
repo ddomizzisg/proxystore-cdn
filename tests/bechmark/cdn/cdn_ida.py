@@ -103,7 +103,9 @@ def test_set_files(
     for i,f in enumerate(files):
         try:
             data = open(f, "rb").read()
+            print(repeat)
             for j in range(repeat):
+                print("Entro2")
                 start = time.perf_counter_ns()
                 key,time_metrics = connector.put(
                         data, 
