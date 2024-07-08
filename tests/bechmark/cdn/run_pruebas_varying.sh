@@ -1,5 +1,5 @@
 
-for m in 5 10 20 40 80 160
+for m in 20 40 80 160
 do 
     bash  stop_containers.sh
     ts=$(date +%s%N)
