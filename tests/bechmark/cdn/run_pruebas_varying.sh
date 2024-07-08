@@ -1,11 +1,11 @@
 
-for m in 10 20 40 80 160
+for m in 5 10 20 40 80 160
 do 
     bash  stop_containers.sh
     ts=$(date +%s%N)
     bash deploy_new_containers.sh $m
     echo $((($(date +%s%N) - $ts)/1000000)) >> time.txt
-    for i in 1 2 4 8 16 32
+    for i in 1 #1 2 4 8 16 32
     do
         for j in 0 1
         do
