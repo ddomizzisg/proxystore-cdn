@@ -130,7 +130,7 @@ if __name__ == '__main__':
         endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
         store = Store('globus', GlobusConnector(endpoints=endpoints))
     elif args.ps_redis:
-        store = Store('redis', RedisConnector('129.114.26.127', args.ps_redis_port))
+        store = Store('redis', RedisConnector('129.114.108.50', args.ps_redis_port))
     elif args.ps_cdn:
         store = Store('cdn', CDNConnector(catalog="proxystore"))
     
@@ -140,7 +140,10 @@ if __name__ == '__main__':
         path = args.dir
         
         #List images in the directory
-        images = glob.glob(f'{path}/*.dcm')
+        #images = glob.glob(f'{path}/*.dcm')
+        images = [os.path.join(dp, f) for dp, dn, filenames in os.walk(path) for f in filenames if os.path.splitext(f)[1] == '.dcm']
+        
+        #print(images)
         futures = []
         for img in images:
             dicom = pydicom.dcmread(img)
@@ -160,15 +163,15 @@ if __name__ == '__main__':
         
         detector_results = [future.result() for future in futures]
         
-        for i,d in enumerate(detector_results):
-            #print(d)
-            plt.figure(figsize=(15,10))
-            plt.imshow(d)
-            print('Done')
-            #La imagen se guarda en la ruta de salida.
-            plt.savefig(os.path.basename(images[i]) + ".png")
-            plt.close()
-            #plt.show()
+        #for i,d in enumerate(detector_results):
+        #    print(d)
+        #    plt.figure(figsize=(15,10))
+        #    plt.imshow(d)
+        #    print('Done')
+        #    #La imagen se guarda en la ruta de salida.
+        #    plt.savefig(os.path.basename(images[i]) + ".png")
+        #    plt.close()
+        #    #plt.show()
             
                 
         #image_np = np.array(Image.open(path))
