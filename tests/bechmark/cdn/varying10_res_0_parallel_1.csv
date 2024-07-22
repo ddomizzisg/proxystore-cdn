@@ -1,0 +1,2 @@
+backend,op,payload_size_bytes,repeat,total_time_ms,avg_time_ms,min_time_ms,clients,workers,n,k,max_time_ms,stdev_time_ms,metadata_time,data_upload_time,throughput,throughput_upload
+CDN,SET,104857600,10,95672.170064,95672.170064,95672.170064,1,1,1,1,95672.170064,0.0,95093.084593,472.308051,0.0010960094239511385,1.0960094239511387
