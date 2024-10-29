@@ -172,9 +172,10 @@ class CDNConnector:
             has been called on the key.
         """
         return CDNKey(cdn_key=str(uuid.uuid4()))
+    
 
     def put(self, data: bytes = None, filepath: str = None, is_encrypted: bool = False,
-            workers: int = 1, resiliency: int = 0) -> CDNKey:
+            workers: int = 1, resiliency: int = 0, number_of_chunks=1, required_chunks=1, nodes=None) -> CDNKey:
         # Read data from file if data is null and a filepath is received
 
         name = time.time() if filepath is None else os.path.basename(filepath)
@@ -186,17 +187,33 @@ class CDNConnector:
         object_id = CDNKey(cdn_key=str(uuid.uuid4()))
 
         try:
-            time_metrics = self.client.put(
-                key=object_id.cdn_key,
-                name=name,
-                data=data,
-                token_user=self.token_user,
-                catalog=self.catalog,
-                session=self._session,
-                is_encrypted=is_encrypted,
-                max_workers=workers, 
-                resiliency=resiliency
-            )
+            if nodes == None:
+                time_metrics = self.client.put(
+                    key=object_id.cdn_key,
+                    name=name,
+                    data=data,
+                    token_user=self.token_user,
+                    catalog=self.catalog,
+                    session=self._session,
+                    is_encrypted=is_encrypted,
+                    max_workers=workers, 
+                    resiliency=resiliency
+                )
+            else:
+                time_metrics = self.client.put_drex(
+                    key=object_id.cdn_key,
+                    name=name,
+                    data=data,
+                    token_user=self.token_user,
+                    catalog=self.catalog,
+                    session=self._session,
+                    is_encrypted=is_encrypted,
+                    max_workers=workers, 
+                    resiliency=resiliency,
+                    number_of_chunks=number_of_chunks,
+                    required_chunks=required_chunks,
+                    nodes=nodes
+                )
         except requests.exceptions.RequestException as e:
             #assert e.response is not None
             raise CDNConnectorError(
