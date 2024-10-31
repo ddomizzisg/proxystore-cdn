@@ -13,14 +13,15 @@ def test_set(
     number_of_chunks: int = 1,
     required_chunks: int = 1,
     workers: int = 1,
-    nodes = None
+    nodes = None,
+    data = None
 ) -> list[float]:
     times_ms: list[float] = []
     
     disperse = "IDA" if number_of_chunks > 1 else "SINGLE"
 
     for i in range(repeat):
-        data = randbytes(payload_size_bytes)
+        data = randbytes(payload_size_bytes) if data is None else data
         start = time.perf_counter_ns()
         key,time_metrics = connector.put(
                 data, 
@@ -35,7 +36,7 @@ def test_set(
         times_ms.append(time_metrics)
 
         # Evict key immediately to keep memory usage low
-        del data
+        #del data
         connector.evict(key)
     
     return times_ms
